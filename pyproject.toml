@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "rampagebot"
+authors = ["Trapsilo Bumi <git@tbumi.id>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.111.0"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+flake8 = "^7.1.0"
+mypy = "^1.10.1"
+isort = "^5.13.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
