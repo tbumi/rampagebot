@@ -1,4 +1,4 @@
-from rampagebot.models.dota.BaseEntity import BaseEntity
+from rampagebot.models.dota.BaseEntity import BaseEntity, Coordinates
 from rampagebot.models.dota.enums.DOTATeam import DOTATeam
 
 
@@ -18,7 +18,7 @@ class BaseNPC(BaseEntity):
     team: DOTATeam
     attackRange: float
     attackDamage: int
-    forwardVector: tuple[float, float, float]
+    forwardVector: Coordinates
     isAttacking: bool
     magicimmune: bool
     attackTarget: str | None = None

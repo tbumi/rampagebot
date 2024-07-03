@@ -2,6 +2,8 @@ from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field
 
+from rampagebot.models.dota.BaseEntity import Coordinates
+
 
 class AttackCommand(BaseModel):
     command: Literal["ATTACK"] = "ATTACK"
@@ -13,6 +15,10 @@ class MoveCommand(BaseModel):
     x: float
     y: float
     z: float
+
+    @classmethod
+    def to(cls, target: Coordinates) -> "MoveCommand":
+        return cls(x=target[0], y=target[1], z=target[2])
 
 
 class StopCommand(BaseModel):

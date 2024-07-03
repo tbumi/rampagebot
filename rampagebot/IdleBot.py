@@ -1,9 +1,10 @@
 from rampagebot.models.Commands import Command
-from rampagebot.models.GameUpdate import GameUpdate
+from rampagebot.models.TeamName import TeamName
+from rampagebot.models.World import World
 
 
 class IdleBot:
-    def __init__(self) -> None:
+    def __init__(self, team: TeamName) -> None:
         self.party = [
             "npc_dota_hero_brewmaster",
             "npc_dota_hero_pudge",
@@ -13,7 +14,5 @@ class IdleBot:
         ]
         self.game_ticks = 0
 
-    def generate_next_commands(
-        self, game_update: GameUpdate
-    ) -> list[dict[str, Command]]:
+    def generate_next_commands(self, world: World) -> list[dict[str, Command]]:
         return []

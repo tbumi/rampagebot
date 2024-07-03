@@ -29,3 +29,9 @@ class EntityPlayerHero(BaseNPC):
     tpScrollCharges: int
 
     abilities: dict[int, Ability]
+
+    def find_ability_by_name(self, ability_name: str) -> int:
+        for ability in self.abilities.values():
+            if ability.name == ability_name:
+                return ability.abilityIndex
+        raise Exception(f"Ability {ability_name} not found in {self.name}")

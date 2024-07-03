@@ -5,9 +5,9 @@ from fastapi import FastAPI, status
 from rampagebot.IdleBot import IdleBot
 from rampagebot.models.Commands import Command
 from rampagebot.models.GameStatusResponse import GameStatusResponse
-from rampagebot.models.GameUpdate import GameUpdate
 from rampagebot.models.Settings import Settings
 from rampagebot.models.TeamName import TeamName
+from rampagebot.models.World import World
 from rampagebot.SmartBot import SmartBot
 
 # TODO accept input
@@ -17,8 +17,8 @@ NUMBER_OF_GAMES = 2
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.bots = {
-        TeamName.RADIANT: SmartBot(),
-        TeamName.DIRE: IdleBot(),
+        TeamName.RADIANT: SmartBot(TeamName.RADIANT),
+        TeamName.DIRE: IdleBot(TeamName.DIRE),
     }
     app.state.games_remaining = NUMBER_OF_GAMES
     yield
@@ -43,11 +43,17 @@ async def send_settings() -> Settings:
 
 
 @app.post("/api/{team}_update")
-async def game_update(
-    team: TeamName, game_update: GameUpdate
-) -> list[dict[str, Command]]:
+async def game_update(team: TeamName, world_info: World) -> list[dict[str, Command]]:
+    if team == TeamName.RADIANT:
+        with open("../game_update.json", "wt") as f:
+            f.write(world_info.model_dump_json())
+
     app.state.bots[team].game_ticks += 1
-    commands = app.state.bots[team].generate_next_commands(game_update)
+    commands = app.state.bots[team].generate_next_commands(world_info)
+
+    if team == TeamName.RADIANT and commands:
+        print(commands)
+
     return commands
 
 
