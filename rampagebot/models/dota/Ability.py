@@ -1,6 +1,7 @@
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 
 from rampagebot.models.dota.enums.DamageType import DamageType
 from rampagebot.models.dota.enums.DOTAAbilityBehavior import DOTAAbilityBehavior
@@ -10,21 +11,21 @@ from rampagebot.models.dota.enums.DOTAUnitTargetType import DOTAUnitTargetType
 
 
 class Ability(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, alias_generator=lambda f: to_camel(f))
 
     type: Literal["Ability"]
     name: str
-    targetFlags: DOTAUnitTargetFlag
-    targetTeam: DOTAUnitTargetTeam
-    targetType: DOTAUnitTargetType
-    abilityType: int
-    abilityIndex: int
+    target_flags: DOTAUnitTargetFlag
+    target_team: DOTAUnitTargetTeam
+    target_type: DOTAUnitTargetType
+    ability_type: int
+    ability_index: int
     level: int
-    maxLevel: int
-    abilityDamage: int
-    abilityDamageType: DamageType
-    cooldownTimeRemaining: float
+    max_level: int
+    ability_damage: int
+    ability_damage_type: DamageType
+    cooldown_time_remaining: float
     behavior: DOTAAbilityBehavior
-    toggleState: bool
-    manaCost: int
-    heroLevelRequiredToLevelUp: int
+    toggle_state: bool
+    mana_cost: int
+    hero_level_required_to_level_up: int

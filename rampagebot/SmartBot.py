@@ -246,7 +246,7 @@ class SmartBot:
                 commands.append({hero.name: MoveCommand(x=0, y=0, z=0)})
                 continue
 
-            if hero.info.hasTowerAggro or hero.info.hasAggro:
+            if hero.info.has_tower_aggro or hero.info.has_aggro:
                 # TODO move as far as needed without going to fountain
                 team = {TeamName.RADIANT: "good", TeamName.DIRE: "bad"}[self.team]
                 fountain = world.find_building_entity(f"ent_dota_fountain_{team}")
@@ -254,7 +254,7 @@ class SmartBot:
                 commands.append({hero.name: MoveCommand.to(fountain.origin)})
                 continue
 
-            if len(hero.ability_build) > 0 and hero.info.abilityPoints > 0:
+            if len(hero.ability_build) > 0 and hero.info.ability_points > 0:
                 next_ability_name = hero.ability_build.pop(0)
                 next_ability_index = hero.info.find_ability_by_name(next_ability_name)
                 commands.append({hero.name: LevelUpCommand(ability=next_ability_index)})
@@ -272,7 +272,7 @@ class SmartBot:
             if (
                 len(hero.item_build) > 0
                 and hero.info.gold > self.items_data[hero.item_build[0]]["cost"]
-                and (hero.info.inRangeOfHomeShop or courier.inRangeOfHomeShop)
+                and (hero.info.in_range_of_home_shop or courier.in_range_of_home_shop)
             ):
                 next_item = hero.item_build.pop(0)
                 commands.append({hero.name: BuyCommand(item=f"item_{next_item}")})
@@ -308,7 +308,7 @@ class SmartBot:
             creep_id, creep_info = creep
             if (
                 calculate_distance(hero.info.origin, creep_info.origin)
-                > hero.info.attackRange
+                > hero.info.attack_range
             ):
                 return MoveCommand.to(creep_info.origin)
             else:

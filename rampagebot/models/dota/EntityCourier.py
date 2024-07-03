@@ -8,5 +8,5 @@ class EntityCourier(BaseNPC):
     type: Literal["Courier"]
 
     items: dict[int, Item | list]  # lua returns an empty list if the object is empty
-    inRangeOfHomeShop: bool
-    inRangeOfSecretShop: bool
+    in_range_of_home_shop: bool
+    in_range_of_secret_shop: bool
