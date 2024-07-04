@@ -5,8 +5,6 @@ Coordinates = tuple[float, float, float]
 
 
 class BaseEntity(BaseModel):
-    model_config = ConfigDict(
-        frozen=True, alias_generator=lambda f: to_camel(f) if f != "courier_id" else f
-    )
+    model_config = ConfigDict(frozen=True, alias_generator=lambda f: to_camel(f))
 
     origin: Coordinates

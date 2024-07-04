@@ -46,7 +46,7 @@ async def send_settings() -> Settings:
 async def game_update(team: TeamName, world_info: World) -> list[dict[str, Command]]:
     if team == TeamName.RADIANT:
         with open("../game_update.json", "wt") as f:
-            f.write(world_info.model_dump_json())
+            f.write(world_info.model_dump_json(by_alias=True))
 
     app.state.bots[team].game_ticks += 1
     commands = app.state.bots[team].generate_next_commands(world_info)
