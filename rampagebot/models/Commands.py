@@ -2,7 +2,7 @@ from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field
 
-from rampagebot.models.dota.BaseEntity import Coordinates
+from rampagebot.models.dota.BaseEntity import Vector
 
 
 class AttackCommand(BaseModel):
@@ -17,7 +17,7 @@ class MoveCommand(BaseModel):
     z: float
 
     @classmethod
-    def to(cls, target: Coordinates) -> "MoveCommand":
+    def to(cls, target: Vector) -> "MoveCommand":
         return cls(x=target[0], y=target[1], z=target[2])
 
 

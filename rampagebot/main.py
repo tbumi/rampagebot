@@ -5,13 +5,13 @@ from typing import Annotated
 
 from fastapi import Body, FastAPI, status
 
+from rampagebot.bot.SmartBot import SmartBot
 from rampagebot.IdleBot import IdleBot
 from rampagebot.models.Commands import Command
 from rampagebot.models.GameStatusResponse import GameStatusResponse
 from rampagebot.models.Settings import Settings
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
-from rampagebot.SmartBot import SmartBot
 
 # TODO accept input
 NUMBER_OF_GAMES = 2

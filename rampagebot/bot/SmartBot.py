@@ -1,7 +1,15 @@
 import json
 from typing import cast
 
-from rampagebot.Hero import Hero, LaneOptions
+from rampagebot.bot.Hero import Hero, LaneOptions
+from rampagebot.bot.utils import (
+    BOT_LEFT,
+    TOP_RIGHT,
+    calculate_distance,
+    find_enemy_creeps_in_lane,
+    find_nearest_enemy_creeps,
+    point_at_distance,
+)
 from rampagebot.models.Commands import (
     AttackCommand,
     BuyCommand,
@@ -10,22 +18,9 @@ from rampagebot.models.Commands import (
     LevelUpCommand,
     MoveCommand,
 )
-from rampagebot.models.dota.BaseEntity import Coordinates
-from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
 from rampagebot.models.dota.EntityCourier import EntityCourier
-from rampagebot.models.dota.enums.DOTATeam import DOTATeam
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
-
-
-def calculate_distance(
-    obj1_loc: Coordinates,
-    obj2_loc: Coordinates,
-):
-    x = (obj1_loc[0] - obj2_loc[0]) ** 2
-    y = (obj1_loc[1] - obj2_loc[1]) ** 2
-    distance = (x + y) ** 0.5
-    return distance
 
 
 class SmartBot:
@@ -180,7 +175,7 @@ class SmartBot:
                     "tango",
                     "branches",
                     "branches",
-                    "blood_grenade",
+                    # "blood_grenade",
                     "circlet",
                     "sobi_mask",
                     "recipe_ring_of_basilius",
@@ -218,7 +213,7 @@ class SmartBot:
                     "tango",
                     "branches",
                     "branches",
-                    "blood_grenade",
+                    # "blood_grenade",
                     "boots",
                     "wind_lace",
                     "ring_of_regen",
@@ -230,7 +225,7 @@ class SmartBot:
         self.party = [hero.name for hero in self._party]
         self.game_ticks = 0
 
-        with open("../items.json", "rt") as f:
+        with open("items.json", "rt") as f:
             self.items_data = json.load(f)
 
     def generate_next_commands(self, world: World) -> list[dict[str, Command]]:
@@ -303,9 +298,9 @@ class SmartBot:
                 hero.at_lane = True
                 hero.moving = False
 
-        creep = self.find_nearest_enemy_creep(hero, world, 2000)
-        if creep is not None:
-            creep_id, creep_info = creep
+        creeps = find_nearest_enemy_creeps(hero.info.origin, world, self.team, 1)
+        if creeps:
+            creep_id, creep_info, _ = creeps[0]
             if (
                 calculate_distance(hero.info.origin, creep_info.origin)
                 > hero.info.attack_range
@@ -327,24 +322,32 @@ class SmartBot:
                 return None
         return AttackCommand(target=tower_id)
 
-    def find_nearest_enemy_creep(
-        self, hero: Hero, world: World, distance_limit: float
-    ) -> tuple[str, EntityBaseNPC] | None:
+    def farm(self, hero: Hero, world: World) -> Command | None:
         assert hero.info is not None
 
-        candidate: tuple[str, EntityBaseNPC] | None = None
-        for id_, entity in world.entities.items():
-            if (
-                isinstance(entity, EntityBaseNPC)
-                and entity.team == DOTATeam.DOTA_TEAM_BADGUYS
-                and entity.alive
-            ):
-                distance_to_entity = calculate_distance(hero.info.origin, entity.origin)
-                if distance_to_entity < distance_limit and (
-                    candidate is None
-                    or distance_to_entity
-                    < calculate_distance(hero.info.origin, candidate[1].origin)
-                ):
-                    candidate = id_, entity
+        creeps = find_enemy_creeps_in_lane(world, hero.lane, self.team)
+        if not creeps:
+            return None
 
-        return candidate
+        own_fountain = BOT_LEFT if self.team == TeamName.RADIANT else TOP_RIGHT
+        distances = [
+            (creep, calculate_distance(own_fountain, creep[1].origin))
+            for creep in creeps
+        ]
+        nearest_creep = min(distances, key=lambda x: x[1])[0]
+        creep_wave = find_nearest_enemy_creeps(
+            nearest_creep[1].origin, world, self.team, 10
+        )
+        creep_with_lowest_health = min(
+            [(c, c[1].health) for c in creep_wave], key=lambda x: x[1]
+        )[0]
+
+        if creep_with_lowest_health[1].health < (
+            0.2 * creep_with_lowest_health[1].max_health
+        ):
+            return AttackCommand(target=creep_with_lowest_health[0])
+
+        attack_range_distance = point_at_distance(
+            creep_with_lowest_health[1].origin, own_fountain, hero.info.attack_range
+        )
+        return MoveCommand.to(attack_range_distance)
