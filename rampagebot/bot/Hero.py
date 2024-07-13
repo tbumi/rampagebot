@@ -10,10 +10,17 @@ class LaneOptions(Enum):
     bottom = "bot"
 
 
+class RoleOptions(Enum):
+    carry = "carry"
+    support = "support"
+
+
 @dataclass
 class Hero:
     name: str
     lane: LaneOptions
+    role: RoleOptions
+
     ability_build: list[str]
     item_build: list[str]
 

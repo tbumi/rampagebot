@@ -21,4 +21,5 @@ class BaseNPC(BaseEntity):
     forward_vector: Vector
     is_attacking: bool
     magicimmune: bool
+    armor: float
     attack_target: str | None = None

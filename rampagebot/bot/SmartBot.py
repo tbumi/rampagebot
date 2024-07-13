@@ -1,12 +1,15 @@
 import json
 from typing import cast
 
-from rampagebot.bot.Hero import Hero, LaneOptions
+from rampagebot.bot.Hero import Hero, LaneOptions, RoleOptions
 from rampagebot.bot.utils import (
     BOT_LEFT,
     TOP_RIGHT,
-    calculate_distance,
+    TeamName_to_goodbad,
+    distance_between,
+    effective_damage,
     find_enemy_creeps_in_lane,
+    find_furthest_tower,
     find_nearest_enemy_creeps,
     point_at_distance,
 )
@@ -18,6 +21,7 @@ from rampagebot.models.Commands import (
     LevelUpCommand,
     MoveCommand,
 )
+from rampagebot.models.dota.BaseEntity import BaseEntity
 from rampagebot.models.dota.EntityCourier import EntityCourier
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
@@ -30,6 +34,7 @@ class SmartBot:
             Hero(
                 name="npc_dota_hero_sniper",
                 lane=LaneOptions.middle,
+                role=RoleOptions.carry,
                 ability_build=[
                     "sniper_headshot",
                     "sniper_take_aim",
@@ -73,6 +78,7 @@ class SmartBot:
             Hero(
                 name="npc_dota_hero_phantom_assassin",
                 lane=LaneOptions.top,
+                role=RoleOptions.carry,
                 ability_build=[
                     "phantom_assassin_stifling_dagger",
                     "phantom_assassin_phantom_strike",
@@ -110,6 +116,7 @@ class SmartBot:
             Hero(
                 name="npc_dota_hero_bristleback",
                 lane=LaneOptions.bottom,
+                role=RoleOptions.carry,
                 ability_build=[
                     "bristleback_quill_spray",
                     "bristleback_bristleback",
@@ -149,6 +156,7 @@ class SmartBot:
             Hero(
                 name="npc_dota_hero_witch_doctor",
                 lane=LaneOptions.bottom,
+                role=RoleOptions.support,  # hard supp
                 ability_build=[
                     "witch_doctor_voodoo_restoration",
                     "witch_doctor_maledict",
@@ -183,10 +191,11 @@ class SmartBot:
                     "magic_stick",
                     "recipe_magic_wand",
                 ],
-            ),  # hard support
+            ),
             Hero(
                 name="npc_dota_hero_lion",
                 lane=LaneOptions.top,
+                role=RoleOptions.support,
                 ability_build=[
                     "lion_impale",
                     "lion_mana_drain",
@@ -220,7 +229,7 @@ class SmartBot:
                     "magic_stick",
                     "recipe_magic_wand",
                 ],
-            ),  # support
+            ),
         ]
         self.party = [hero.name for hero in self._party]
         self.game_ticks = 0
@@ -242,16 +251,23 @@ class SmartBot:
                 continue
 
             if hero.info.has_tower_aggro or hero.info.has_aggro:
-                # TODO move as far as needed without going to fountain
-                team = {TeamName.RADIANT: "good", TeamName.DIRE: "bad"}[self.team]
-                fountain = world.find_building_entity(f"ent_dota_fountain_{team}")
-                assert fountain is not None
-                commands.append({hero.name: MoveCommand.to(fountain.origin)})
+                entity: BaseEntity | None = find_furthest_tower(
+                    self.team, world, hero.lane
+                )
+                if entity is None:
+                    team = TeamName_to_goodbad(self.team)
+                    entity = world.find_building_entity(f"ent_dota_fountain_{team}")
+                    assert entity is not None
+                commands.append({hero.name: MoveCommand.to(entity.origin)})
                 continue
 
             if len(hero.ability_build) > 0 and hero.info.ability_points > 0:
                 next_ability_name = hero.ability_build.pop(0)
                 next_ability_index = hero.info.find_ability_by_name(next_ability_name)
+                # print(
+                #     f"Leveling up {hero.name}'s {next_ability_name} when hero has"
+                #     f" {hero.info.ability_points} points"
+                # )
                 commands.append({hero.name: LevelUpCommand(ability=next_ability_index)})
                 continue
 
@@ -270,10 +286,15 @@ class SmartBot:
                 and (hero.info.in_range_of_home_shop or courier.in_range_of_home_shop)
             ):
                 next_item = hero.item_build.pop(0)
+                # cost = self.items_data[next_item]["cost"]
+                # print(
+                #     f"Buying {next_item} for {hero.name} having {hero.info.gold} "
+                #     f"costing {cost}"
+                # )
                 commands.append({hero.name: BuyCommand(item=f"item_{next_item}")})
                 continue
 
-            next_command = self.push_lane(hero, world)
+            next_command = self.farm(hero, world)
             if next_command is not None:
                 commands.append({hero.name: next_command})
                 continue
@@ -282,15 +303,15 @@ class SmartBot:
 
     def push_lane(self, hero: Hero, world: World) -> Command | None:
         assert hero.info is not None
-        my_team = {TeamName.RADIANT: "good", TeamName.DIRE: "bad"}[self.team]
-        enemy_team = {TeamName.RADIANT: "bad", TeamName.DIRE: "good"}[self.team]
+        my_team = TeamName_to_goodbad(self.team)
+        enemy_team = TeamName_to_goodbad(self.team, reverse=True)
 
         if not hero.at_lane:
             tower_entity = world.find_tower_entity(
                 f"dota_{my_team}guys_tower1_{hero.lane.value}"
             )
             assert tower_entity is not None
-            if calculate_distance(hero.info.origin, tower_entity.origin) > 200:
+            if distance_between(hero.info.origin, tower_entity.origin) > 200:
                 if not hero.moving:
                     hero.moving = True
                     return MoveCommand.to(tower_entity.origin)
@@ -302,7 +323,7 @@ class SmartBot:
         if creeps:
             creep_id, creep_info, _ = creeps[0]
             if (
-                calculate_distance(hero.info.origin, creep_info.origin)
+                distance_between(hero.info.origin, creep_info.origin)
                 > hero.info.attack_range
             ):
                 return MoveCommand.to(creep_info.origin)
@@ -325,29 +346,43 @@ class SmartBot:
     def farm(self, hero: Hero, world: World) -> Command | None:
         assert hero.info is not None
 
+        my_team = TeamName_to_goodbad(self.team)
+        if not hero.at_lane:
+            tower_entity = world.find_tower_entity(
+                f"dota_{my_team}guys_tower1_{hero.lane.value}"
+            )
+            assert tower_entity is not None
+            if distance_between(hero.info.origin, tower_entity.origin) > 200:
+                if not hero.moving:
+                    hero.moving = True
+                    return MoveCommand.to(tower_entity.origin)
+            else:
+                hero.at_lane = True
+                hero.moving = False
+
         creeps = find_enemy_creeps_in_lane(world, hero.lane, self.team)
         if not creeps:
             return None
 
         own_fountain = BOT_LEFT if self.team == TeamName.RADIANT else TOP_RIGHT
         distances = [
-            (creep, calculate_distance(own_fountain, creep[1].origin))
-            for creep in creeps
+            (creep, distance_between(own_fountain, creep[1].origin)) for creep in creeps
         ]
-        nearest_creep = min(distances, key=lambda x: x[1])[0]
+        _, nearest_creep = min(distances, key=lambda x: x[1])[0]
         creep_wave = find_nearest_enemy_creeps(
-            nearest_creep[1].origin, world, self.team, 10
+            nearest_creep.origin, world, self.team, 10
         )
-        creep_with_lowest_health = min(
+        creep_with_lowest_health_id, creep_with_lowest_health, _ = min(
             [(c, c[1].health) for c in creep_wave], key=lambda x: x[1]
         )[0]
 
-        if creep_with_lowest_health[1].health < (
-            0.2 * creep_with_lowest_health[1].max_health
+        if creep_with_lowest_health.health < effective_damage(
+            hero.info.attack_damage, creep_with_lowest_health.armor
         ):
-            return AttackCommand(target=creep_with_lowest_health[0])
+            return AttackCommand(target=creep_with_lowest_health_id)
 
         attack_range_distance = point_at_distance(
-            creep_with_lowest_health[1].origin, own_fountain, hero.info.attack_range
+            creep_with_lowest_health.origin, own_fountain, hero.info.attack_range
         )
+
         return MoveCommand.to(attack_range_distance)

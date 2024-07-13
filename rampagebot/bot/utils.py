@@ -3,6 +3,7 @@ import math
 from rampagebot.bot.Hero import LaneOptions
 from rampagebot.models.dota.BaseEntity import Vector
 from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
+from rampagebot.models.dota.EntityTower import EntityTower
 from rampagebot.models.dota.enums.DOTATeam import DOTATeam
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
@@ -20,10 +21,15 @@ def TeamName_to_DOTATeam(team: TeamName) -> DOTATeam:
     }[team]
 
 
-def calculate_distance(
-    obj1_loc: Vector,
-    obj2_loc: Vector,
-):
+def TeamName_to_goodbad(team: TeamName, *, reverse: bool = False) -> str:
+    if reverse:
+        tdict = {TeamName.RADIANT: "bad", TeamName.DIRE: "good"}
+    else:
+        tdict = {TeamName.RADIANT: "good", TeamName.DIRE: "bad"}
+    return tdict[team]
+
+
+def distance_between(obj1_loc: Vector, obj2_loc: Vector) -> float:
     x = (obj1_loc[0] - obj2_loc[0]) ** 2
     y = (obj1_loc[1] - obj2_loc[1]) ** 2
     distance = math.sqrt(x + y)
@@ -31,8 +37,8 @@ def calculate_distance(
 
 
 def point_at_distance(a: Vector, b: Vector, distance: float) -> Vector:
-    x = a[0] - b[0]
-    y = a[1] - b[1]
+    x = b[0] - a[0]
+    y = b[1] - a[1]
     hypot = math.sqrt(x**2 + y**2)
     x_unit = x / hypot
     y_unit = y / hypot
@@ -52,17 +58,17 @@ def find_nearest_enemy_creeps(
     world: World,
     own_team: TeamName,
     max_num_of_creeps: int,
-    distance_limit: float = 200,
+    distance_limit: float = 700,
 ) -> list[tuple[str, EntityBaseNPC, float]]:
     candidates: list[tuple[str, EntityBaseNPC, float]] = []
     for id_, entity in world.entities.items():
         if (
             isinstance(entity, EntityBaseNPC)
-            and entity.name == "npc_dota_creep_lane"
+            and entity.name in ("npc_dota_creep_lane", "npc_dota_creep_siege")
             and entity.team != TeamName_to_DOTATeam(own_team)
             and entity.alive
         ):
-            distance_to_entity = calculate_distance(origin_location, entity.origin)
+            distance_to_entity = distance_between(origin_location, entity.origin)
             if distance_to_entity < distance_limit:
                 candidates.append((id_, entity, distance_to_entity))
 
@@ -76,7 +82,7 @@ def find_enemy_creeps_in_lane(
     for id_, entity in world.entities.items():
         if (
             isinstance(entity, EntityBaseNPC)
-            and entity.name == "npc_dota_creep_lane"
+            and entity.name in ("npc_dota_creep_lane", "npc_dota_creep_siege")
             and entity.team != TeamName_to_DOTATeam(hero_team)
             and entity.alive
         ):
@@ -99,3 +105,24 @@ def find_enemy_creeps_in_lane(
                 ):
                     creeps.append((id_, entity))
     return creeps
+
+
+def effective_damage(damage: float, armor: float) -> float:
+    mult = 1 - ((0.06 * armor) / (1 + (0.06 * math.fabs(armor))))
+    return damage * mult
+
+
+def find_furthest_tower(
+    team_name: TeamName, world: World, lane: LaneOptions
+) -> EntityTower | None:
+    team = TeamName_to_goodbad(team_name)
+    tier = 1
+    while True:
+        tower_entity = world.find_tower_entity(
+            f"dota_{team}guys_tower{tier}_{lane.value}"
+        )
+        if tower_entity is not None:
+            return tower_entity
+        tier += 1
+        if tier == 5:
+            return None
