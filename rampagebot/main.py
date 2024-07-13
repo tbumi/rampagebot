@@ -49,7 +49,7 @@ async def send_settings() -> Settings:
 @app.post("/api/{team}_update")
 async def game_update(team: TeamName, world_info: World) -> list[dict[str, Command]]:
     if team == TeamName.RADIANT:
-        with open("../game_update.json", "wt") as f:
+        with open("json_samples/game_update.json", "wt") as f:
             f.write(world_info.model_dump_json(by_alias=True))
 
     app.state.bots[team].game_ticks += 1
@@ -95,7 +95,9 @@ async def statistics(
 
     game_number = NUMBER_OF_GAMES - app.state.games_remaining
     datestr = app.state.started_time.strftime("%Y%m%d_%H%M%S")
-    csv_path = Path(f"../{datestr}_statistics_{game_number}.csv")
+    dir_path = Path("./statistics")
+    dir_path.mkdir(parents=True, exist_ok=True)
+    csv_path = dir_path / f"{datestr}_statistics_{game_number}.csv"
 
     is_new_csv = not csv_path.exists()
     with open(csv_path, "at") as f:
