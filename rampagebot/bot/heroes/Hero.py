@@ -1,18 +1,8 @@
 from dataclasses import dataclass
-from enum import Enum
 
+from rampagebot.bot.enums import LaneOptions, RoleOptions
+from rampagebot.models.dota.Ability import Ability
 from rampagebot.models.dota.EntityPlayerHero import EntityPlayerHero
-
-
-class LaneOptions(Enum):
-    top = "top"
-    middle = "mid"
-    bottom = "bot"
-
-
-class RoleOptions(Enum):
-    carry = "carry"
-    support = "support"
 
 
 @dataclass
@@ -28,6 +18,12 @@ class Hero:
     at_lane: bool = False
     courier_transferring_items: bool = False
 
-    courier_move = False
-
     info: EntityPlayerHero | None = None
+
+    def can_cast_ability(self, ability: Ability) -> bool:
+        return (
+            self.info is not None
+            and ability.level > 0
+            and ability.cooldown_time_remaining == 0
+            and self.info.mana > ability.mana_cost
+        )

@@ -29,3 +29,4 @@ class Ability(BaseModel):
     toggle_state: bool
     mana_cost: int
     hero_level_required_to_level_up: int
+    charges: int

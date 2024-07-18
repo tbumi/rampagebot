@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-@app.get("/api/settings")
+@app.get("/api/settings", response_model_exclude_unset=True)
 async def send_settings() -> Settings:
     return Settings(
         should_have_pre_game_delay=False,

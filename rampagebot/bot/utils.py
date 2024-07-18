@@ -1,8 +1,9 @@
 import math
 
-from rampagebot.bot.Hero import LaneOptions
+from rampagebot.bot.enums import LaneOptions
 from rampagebot.models.dota.BaseEntity import Vector
 from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
+from rampagebot.models.dota.EntityHero import EntityHero
 from rampagebot.models.dota.EntityTower import EntityTower
 from rampagebot.models.dota.enums.DOTATeam import DOTATeam
 from rampagebot.models.TeamName import TeamName
@@ -40,6 +41,8 @@ def point_at_distance(a: Vector, b: Vector, distance: float) -> Vector:
     x = b[0] - a[0]
     y = b[1] - a[1]
     hypot = math.sqrt(x**2 + y**2)
+    if hypot == 0:
+        return a
     x_unit = x / hypot
     y_unit = y / hypot
     point_x = a[0] + (x_unit * distance)
@@ -105,6 +108,29 @@ def find_enemy_creeps_in_lane(
                 ):
                     creeps.append((id_, entity))
     return creeps
+
+
+def find_nearest_enemy_hero(
+    origin_location: Vector,
+    world: World,
+    own_team: TeamName,
+    distance_limit: float,
+) -> tuple[str, EntityHero, float] | None:
+    candidates: list[tuple[str, EntityHero, float]] = []
+    for id_, entity in world.entities.items():
+        if (
+            isinstance(entity, EntityHero)
+            and entity.team != TeamName_to_DOTATeam(own_team)
+            and entity.alive
+        ):
+            distance_to_entity = distance_between(origin_location, entity.origin)
+            if distance_to_entity < distance_limit:
+                candidates.append((id_, entity, distance_to_entity))
+
+    if len(candidates) == 0:
+        return None
+
+    return sorted(candidates, key=lambda x: x[2])[0]
 
 
 def effective_damage(damage: float, armor: float) -> float:

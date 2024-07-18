@@ -1,7 +1,12 @@
 import json
 from typing import cast
 
-from rampagebot.bot.Hero import Hero, LaneOptions, RoleOptions
+from rampagebot.bot.heroes.Hero import Hero
+from rampagebot.bot.heroes.Lion import Lion
+from rampagebot.bot.heroes.PhantomAssassin import PhantomAssassin
+from rampagebot.bot.heroes.Sniper import Sniper
+from rampagebot.bot.heroes.SpiritBreaker import SpiritBreaker
+from rampagebot.bot.heroes.WitchDoctor import WitchDoctor
 from rampagebot.bot.utils import (
     BOT_LEFT,
     TOP_RIGHT,
@@ -26,243 +31,29 @@ from rampagebot.models.dota.EntityCourier import EntityCourier
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
+ITEMS_JSON_PATH = "rampagebot/static/items.json"
+
 
 class SmartBot:
     def __init__(self, team: TeamName) -> None:
         self.team = team
-        self._party = [
-            Hero(
-                name="npc_dota_hero_sniper",
-                lane=LaneOptions.middle,
-                role=RoleOptions.carry,
-                ability_build=[
-                    "sniper_headshot",
-                    "sniper_take_aim",
-                    "sniper_headshot",
-                    "sniper_shrapnel",
-                    "sniper_shrapnel",
-                    "sniper_assassinate",
-                    "sniper_shrapnel",
-                    "sniper_shrapnel",
-                    "sniper_headshot",
-                    "sniper_headshot",
-                    "special_bonus_unique_sniper_headshot_damage",
-                    "sniper_assassinate",
-                    "sniper_take_aim",
-                    "sniper_take_aim",
-                    "special_bonus_attack_speed_30",
-                    "sniper_take_aim",
-                    "sniper_assassinate",
-                    "special_bonus_attack_range_100",
-                    "special_bonus_unique_sniper_2",
-                ],
-                item_build=[
-                    "tango",
-                    "branches",
-                    "branches",
-                    "faerie_fire",
-                    "slippers",
-                    "circlet",
-                    "recipe_wraith_band",
-                    "slippers",
-                    "circlet",
-                    "recipe_wraith_band",
-                    "boots",
-                    "gloves",
-                    "boots_of_elves",
-                    "blade_of_alacrity",
-                    "belt_of_strength",
-                    "recipe_dragon_lance",
-                    "mithril_hammer",
-                    "javelin",
-                    "gloves",
-                ],
-            ),
-            Hero(
-                name="npc_dota_hero_phantom_assassin",
-                lane=LaneOptions.top,
-                role=RoleOptions.carry,
-                ability_build=[
-                    "phantom_assassin_stifling_dagger",
-                    "phantom_assassin_phantom_strike",
-                    "phantom_assassin_stifling_dagger",
-                    "phantom_assassin_phantom_strike",
-                    "phantom_assassin_stifling_dagger",
-                    "phantom_assassin_coup_de_grace",
-                    "phantom_assassin_phantom_strike",
-                    "phantom_assassin_phantom_strike",
-                    "phantom_assassin_stifling_dagger",
-                    "special_bonus_unique_phantom_assassin_4",
-                    "phantom_assassin_blur",
-                    "phantom_assassin_coup_de_grace",
-                    "phantom_assassin_blur",
-                    "phantom_assassin_blur",
-                    "special_bonus_unique_phantom_assassin_6",
-                    "phantom_assassin_blur",
-                    "phantom_assassin_coup_de_grace",
-                    "special_bonus_unique_phantom_assassin_strike_aspd",
-                    "special_bonus_unique_phantom_assassin",
-                ],
-                item_build=[
-                    "tango",
-                    "branches",
-                    "branches",
-                    "quelling_blade",
-                    "slippers",
-                    "circlet",
-                    "recipe_wraith_band",
-                    "boots",
-                    "magic_stick",
-                    "recipe_magic_wand",
-                    "gloves",
-                    "boots_of_elves",
-                    "broadsword",
-                    "claymore",
-                    "cornucopia",
-                    "recipe_bfury",
-                    "ogre_axe",
-                    "mithril_hammer",
-                    "recipe_black_king_bar",
-                    "mithril_hammer",
-                    "mithril_hammer",
-                    "blight_stone",
-                ],
-            ),
-            Hero(
-                name="npc_dota_hero_spirit_breaker",
-                lane=LaneOptions.bottom,
-                role=RoleOptions.carry,
-                ability_build=[
-                    "spirit_breaker_greater_bash",
-                    "spirit_breaker_charge_of_darkness",
-                    "spirit_breaker_greater_bash",
-                    "spirit_breaker_charge_of_darkness",
-                    "spirit_breaker_greater_bash",
-                    "spirit_breaker_nether_strike",
-                    "spirit_breaker_greater_bash",
-                    "spirit_breaker_charge_of_darkness",
-                    "spirit_breaker_charge_of_darkness",
-                    "spirit_breaker_bulldoze",
-                    "spirit_breaker_bulldoze",
-                    "spirit_breaker_nether_strike",
-                    "spirit_breaker_bulldoze",
-                    "spirit_breaker_bulldoze",
-                    "special_bonus_armor_4",
-                    "special_bonus_attack_damage_45",
-                    "spirit_breaker_nether_strike",
-                    "special_bonus_unique_spirit_breaker_1",  # +17% greater bash chance
-                    "special_bonus_unique_spirit_breaker_3",  # +25% greater bash damage
-                ],
-                item_build=[
-                    "tango",
-                    "branches",
-                    "branches",
-                    "quelling_blade",
-                    "gauntlets",
-                    "circlet",
-                    "recipe_bracer",
-                    "boots",
-                    "chainmail",
-                    "blades_of_attack",
-                    "magic_stick",
-                    "recipe_magic_wand",
-                    "shadow_amulet",
-                    "blitz_knuckles",
-                    "broadsword",
-                    "tiara_of_selemene",
-                    "point_booster",
-                    "vitality_booster",
-                    "energy_booster",
-                ],
-            ),
-            Hero(
-                name="npc_dota_hero_witch_doctor",
-                lane=LaneOptions.bottom,
-                role=RoleOptions.support,  # hard supp
-                ability_build=[
-                    "witch_doctor_paralyzing_cask",
-                    "witch_doctor_maledict",
-                    "witch_doctor_paralyzing_cask",
-                    "witch_doctor_maledict",
-                    "witch_doctor_paralyzing_cask",
-                    "witch_doctor_death_ward",
-                    "witch_doctor_paralyzing_cask",
-                    "witch_doctor_maledict",
-                    "witch_doctor_maledict",
-                    "special_bonus_hp_200",  # +200 health
-                    "witch_doctor_voodoo_restoration",
-                    "witch_doctor_death_ward",
-                    "witch_doctor_voodoo_restoration",
-                    "witch_doctor_voodoo_restoration",
-                    "special_bonus_unique_witch_doctor_3",  # +2 cask bounces
-                    "witch_doctor_voodoo_restoration",
-                    "witch_doctor_death_ward",
-                    "special_bonus_unique_witch_doctor_7",  # +30% maledict burst damage
-                    "special_bonus_unique_witch_doctor_5",  # +45 death ward damage
-                ],
-                item_build=[
-                    "tango",
-                    "tango",
-                    "branches",
-                    "branches",
-                    "blood_grenade",
-                    "circlet",
-                    "sobi_mask",
-                    "recipe_ring_of_basilius",
-                    "boots",
-                    "magic_stick",
-                    "recipe_magic_wand",
-                ],
-            ),
-            Hero(
-                name="npc_dota_hero_lion",
-                lane=LaneOptions.top,
-                role=RoleOptions.support,
-                ability_build=[
-                    "lion_impale",
-                    "lion_mana_drain",
-                    "lion_mana_drain",
-                    "lion_voodoo",
-                    "lion_mana_drain",
-                    "lion_finger_of_death",
-                    "lion_mana_drain",
-                    "lion_impale",
-                    "lion_impale",
-                    "lion_impale",
-                    "special_bonus_unique_lion_6",  # +10% Mana Drain Slow
-                    "lion_finger_of_death",
-                    "lion_voodoo",
-                    "lion_voodoo",
-                    "special_bonus_unique_lion_11",  # +70 Max Health Per Finger Kill
-                    "lion_voodoo",
-                    "lion_finger_of_death",
-                    "special_bonus_unique_lion_10",  # Earth Spike affects a 30deg cone
-                    "special_bonus_unique_lion_4",  # +250 AoE Hex
-                ],
-                item_build=[
-                    "tango",
-                    "tango",
-                    "branches",
-                    "branches",
-                    "blood_grenade",
-                    "boots",
-                    "wind_lace",
-                    "ring_of_regen",
-                    "magic_stick",
-                    "recipe_magic_wand",
-                ],
-            ),
+        self.heroes: list[Hero] = [
+            Sniper(team),
+            PhantomAssassin(team),
+            SpiritBreaker(team),
+            WitchDoctor(team),
+            Lion(team),
         ]
-        self.party = [hero.name for hero in self._party]
+        self.party = [hero.name for hero in self.heroes]
         self.game_ticks = 0
 
-        with open("items.json", "rt") as f:
+        with open(ITEMS_JSON_PATH, "rt") as f:
             self.items_data = json.load(f)
 
     def generate_next_commands(self, world: World) -> list[dict[str, Command]]:
         commands: list[dict[str, Command]] = []
 
-        for hero in self._party:
+        for hero in self.heroes:
             hero.info = world.find_player_hero_entity(hero.name)
 
             if hero.info is None:
@@ -285,7 +76,9 @@ class SmartBot:
 
             if len(hero.ability_build) > 0 and hero.info.ability_points > 0:
                 next_ability_name = hero.ability_build.pop(0)
-                next_ability_index = hero.info.find_ability_by_name(next_ability_name)
+                next_ability_index = hero.info.find_ability_by_name(
+                    next_ability_name
+                ).ability_index
                 # print(
                 #     f"Leveling up {hero.name}'s {next_ability_name} when hero has"
                 #     f" {hero.info.ability_points} points"
