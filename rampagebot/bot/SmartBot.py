@@ -80,33 +80,29 @@ class SmartBot:
                 next_ability_index = hero.info.find_ability_by_name(
                     next_ability_name
                 ).ability_index
-                # print(
-                #     f"Leveling up {hero.name}'s {next_ability_name} when hero has"
-                #     f" {hero.info.ability_points} points"
-                # )
                 commands.append({hero.name: LevelUpCommand(ability=next_ability_index)})
                 continue
 
-            courier = cast(EntityCourier, world.entities[hero.info.courier_id])
-            if any(courier.items.values()):
-                if not hero.courier_transferring_items:
-                    commands.append({hero.name: CourierTransferItemsCommand()})
-                    hero.courier_transferring_items = True
-                    continue
-            else:
-                hero.courier_transferring_items = False
+            courier = world.entities.get(hero.info.courier_id)
+            if courier is not None:
+                courier = cast(EntityCourier, courier)
+                if any(courier.items.values()):
+                    if not hero.courier_transferring_items:
+                        commands.append({hero.name: CourierTransferItemsCommand()})
+                        hero.courier_transferring_items = True
+                        continue
+                else:
+                    hero.courier_transferring_items = False
 
             if (
                 len(hero.item_build) > 0
                 and hero.info.gold > self.items_data[hero.item_build[0]]["cost"]
-                and (hero.info.in_range_of_home_shop or courier.in_range_of_home_shop)
+                and (
+                    hero.info.in_range_of_home_shop
+                    or (courier is not None and courier.in_range_of_home_shop)
+                )
             ):
                 next_item = hero.item_build.pop(0)
-                # cost = self.items_data[next_item]["cost"]
-                # print(
-                #     f"Buying {next_item} for {hero.name} having {hero.info.gold} "
-                #     f"costing {cost}"
-                # )
                 commands.append({hero.name: BuyCommand(item=f"item_{next_item}")})
                 continue
 
