@@ -138,17 +138,16 @@ def effective_damage(damage: float, armor: float) -> float:
     return damage * mult
 
 
-def find_furthest_tower(
+def find_outermost_tower(
     team_name: TeamName, world: World, lane: LaneOptions
 ) -> EntityTower | None:
     team = TeamName_to_goodbad(team_name)
     tier = 1
-    while True:
+    while tier < 5:
         tower_entity = world.find_tower_entity(
             f"dota_{team}guys_tower{tier}_{lane.value}"
         )
         if tower_entity is not None:
             return tower_entity
         tier += 1
-        if tier == 5:
-            return None
+    return None

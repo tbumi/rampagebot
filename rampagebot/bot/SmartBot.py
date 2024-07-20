@@ -14,8 +14,8 @@ from rampagebot.bot.utils import (
     distance_between,
     effective_damage,
     find_enemy_creeps_in_lane,
-    find_furthest_tower,
     find_nearest_enemy_creeps,
+    find_outermost_tower,
     point_at_distance,
 )
 from rampagebot.models.Commands import (
@@ -60,11 +60,12 @@ class SmartBot:
                 # hero is dead
                 hero.moving = False
                 hero.at_lane = False
+                # this command is needed to get hero out of "dead" status after respawn
                 commands.append({hero.name: MoveCommand(x=0, y=0, z=0)})
                 continue
 
             if hero.info.has_tower_aggro or hero.info.has_aggro:
-                entity: BaseEntity | None = find_furthest_tower(
+                entity: BaseEntity | None = find_outermost_tower(
                     self.team, world, hero.lane
                 )
                 if entity is None:

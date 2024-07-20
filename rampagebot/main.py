@@ -1,9 +1,12 @@
+import json
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Body, FastAPI, status
+from fastapi import Body, FastAPI, Response, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 
 from rampagebot.bot.SmartBot import SmartBot
 from rampagebot.IdleBot import IdleBot
@@ -29,6 +32,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    print(json.dumps(jsonable_encoder({"detail": exc.errors()}), indent=2))
+    return Response(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+    )
 
 
 @app.get("/api/settings", response_model_exclude_unset=True)
