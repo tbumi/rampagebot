@@ -6,7 +6,7 @@ class Settings(BaseModel):
     should_dire_be_native_bots: bool
     grant_global_vision: bool
     radiant_party_names: list[str]
-    dire_party_names: list[str] = []  # when dire is native bots, no need to fill in
+    dire_party_names: list[str]
     spectator_mode: bool
     auto_restart_client_on_server_restart: bool
     game_number: int
