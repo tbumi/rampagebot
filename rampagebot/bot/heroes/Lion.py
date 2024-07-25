@@ -54,6 +54,10 @@ class Lion(Hero):
                 "ring_of_regen",
                 "magic_stick",
                 "recipe_magic_wand",
+                "aghanims_shard",
+                "energy_booster",
+                "void_stone",
+                "recipe_aether_lens",
             ],
         )
 
