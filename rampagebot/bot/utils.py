@@ -14,6 +14,24 @@ MID_RIGHT = (2500, -2000, 400)
 MID_LEFT = (-2500, 2000, 400)
 BOT_LEFT = (-7500, -7000, 400)
 
+SECRET_SHOP_ITEMS = (
+    "cornucopia",
+    "demon_edge",
+    "eagle",
+    "energy_booster",
+    "hyperstone",
+    "mystic_staff",
+    "platemail",
+    "point_booster",
+    "reaver",
+    "relic",
+    "ring_of_tarrasque",
+    "talisman_of_evasion",
+    "tiara_of_selemene",
+    "ultimate_orb",
+    "vitality_booster",
+)
+
 
 def TeamName_to_DOTATeam(team: TeamName) -> DOTATeam:
     return {
@@ -22,12 +40,8 @@ def TeamName_to_DOTATeam(team: TeamName) -> DOTATeam:
     }[team]
 
 
-def TeamName_to_goodbad(team: TeamName, *, reverse: bool = False) -> str:
-    if reverse:
-        tdict = {TeamName.RADIANT: "bad", TeamName.DIRE: "good"}
-    else:
-        tdict = {TeamName.RADIANT: "good", TeamName.DIRE: "bad"}
-    return tdict[team]
+def TeamName_to_goodbad(team: TeamName) -> str:
+    return {TeamName.RADIANT: "good", TeamName.DIRE: "bad"}[team]
 
 
 def distance_between(obj1_loc: Vector, obj2_loc: Vector) -> float:
@@ -140,14 +154,12 @@ def effective_damage(damage: float, armor: float) -> float:
 
 def find_outermost_tower(
     team_name: TeamName, world: World, lane: LaneOptions
-) -> EntityTower | None:
+) -> tuple[None, None] | tuple[str, EntityTower]:
     team = TeamName_to_goodbad(team_name)
     tier = 1
     while tier < 5:
-        tower_entity = world.find_tower_entity(
-            f"dota_{team}guys_tower{tier}_{lane.value}"
-        )
-        if tower_entity is not None:
-            return tower_entity
+        tower = world.find_tower_entity(f"dota_{team}guys_tower{tier}_{lane.value}")
+        if tower is not None:
+            return tower
         tier += 1
-    return None
+    return None, None

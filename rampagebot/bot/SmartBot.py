@@ -28,7 +28,7 @@ from rampagebot.models.Commands import (
 )
 from rampagebot.models.dota.BaseEntity import BaseEntity
 from rampagebot.models.dota.EntityCourier import EntityCourier
-from rampagebot.models.TeamName import TeamName
+from rampagebot.models.TeamName import TeamName, enemy_team
 from rampagebot.models.World import World
 
 ITEMS_JSON_PATH = "rampagebot/static/items.json"
@@ -61,13 +61,13 @@ class SmartBot:
                 hero.moving = False
                 hero.at_lane = False
                 # this command is needed to get hero out of "dead" status after respawn
-                commands.append({hero.name: MoveCommand(x=0, y=0, z=0)})
+                base = BOT_LEFT if self.team == TeamName.RADIANT else TOP_RIGHT
+                commands.append({hero.name: MoveCommand.to(base)})
                 continue
 
             if hero.info.has_tower_aggro or hero.info.has_aggro:
-                entity: BaseEntity | None = find_outermost_tower(
-                    self.team, world, hero.lane
-                )
+                tower = find_outermost_tower(self.team, world, hero.lane)
+                entity: BaseEntity | None = tower[1]
                 if entity is None:
                     team = TeamName_to_goodbad(self.team)
                     entity = world.find_building_entity(f"ent_dota_fountain_{team}")
@@ -97,10 +97,7 @@ class SmartBot:
             if (
                 len(hero.item_build) > 0
                 and hero.info.gold > self.items_data[hero.item_build[0]]["cost"]
-                and (
-                    hero.info.in_range_of_home_shop
-                    or (courier is not None and courier.in_range_of_home_shop)
-                )
+                and hero.can_buy_item(hero.item_build[0])
             ):
                 next_item = hero.item_build.pop(0)
                 commands.append({hero.name: BuyCommand(item=f"item_{next_item}")})
@@ -116,10 +113,9 @@ class SmartBot:
     def push_lane(self, hero: Hero, world: World) -> Command | None:
         assert hero.info is not None
         my_team = TeamName_to_goodbad(self.team)
-        enemy_team = TeamName_to_goodbad(self.team, reverse=True)
 
         if not hero.at_lane:
-            tower_entity = world.find_tower_entity(
+            _, tower_entity = world.find_tower_entity(
                 f"dota_{my_team}guys_tower1_{hero.lane.value}"
             )
             assert tower_entity is not None
@@ -142,17 +138,9 @@ class SmartBot:
             else:
                 return AttackCommand(target=creep_id)
 
-        tier = 1
-        while True:
-            tower_id = world.find_tower_id(
-                f"dota_{enemy_team}guys_tower{tier}_{hero.lane.value}"
-            )
-            if tower_id is not None:
-                break
-            tier += 1
-            if tier == 5:
-                # TODO destroy ancient?
-                return None
+        tower_id, _ = find_outermost_tower(enemy_team(self.team), world, hero.lane)
+        if tower_id is None:
+            return None
         return AttackCommand(target=tower_id)
 
     def farm(self, hero: Hero, world: World) -> Command | None:
@@ -160,7 +148,7 @@ class SmartBot:
 
         my_team = TeamName_to_goodbad(self.team)
         if not hero.at_lane:
-            tower_entity = world.find_tower_entity(
+            _, tower_entity = world.find_tower_entity(
                 f"dota_{my_team}guys_tower1_{hero.lane.value}"
             )
             assert tower_entity is not None
@@ -198,3 +186,7 @@ class SmartBot:
         )
 
         return MoveCommand.to(attack_range_distance)
+
+    def retreat(self, hero: Hero, world: World) -> Command | None:
+        # TODO
+        return None

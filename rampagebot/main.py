@@ -19,13 +19,30 @@ from rampagebot.models.World import World
 # TODO accept input
 NUMBER_OF_GAMES = 2
 
+STAT_FIELDS = [
+    "id",
+    "team",
+    "name",
+    "gold",
+    "level",
+    "dmg_dealt_hero",
+    "dmg_dealt_struct",
+    "dmg_dealt_creep",
+    "total_dmg_dealt",
+    "dmg_received_hero",
+    "dmg_received_struct",
+    "dmg_received_creep",
+    "total_dmg_received",
+    "last_hits",
+    "kills",
+    "deaths",
+    "assists",
+    "denies",
+]
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.bots = {
-        TeamName.RADIANT: SmartBot(TeamName.RADIANT),
-        TeamName.DIRE: IdleBot(TeamName.DIRE),
-    }
     app.state.started_time = datetime.now()
     app.state.games_remaining = NUMBER_OF_GAMES
     yield
@@ -36,6 +53,8 @@ app = FastAPI(lifespan=lifespan)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
+    # we use this because we need to see the error server side,
+    # since it's harder to see errors from the client side (dota)
     print(json.dumps(jsonable_encoder({"detail": exc.errors()}), indent=2))
     return Response(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -44,13 +63,19 @@ async def validation_exception_handler(request, exc):
 
 @app.get("/api/settings", response_model_exclude_unset=True)
 async def send_settings() -> Settings:
+    # this endpoint is called on every new game
+    app.state.bots = {
+        TeamName.RADIANT: SmartBot(TeamName.RADIANT),
+        TeamName.DIRE: IdleBot(TeamName.DIRE),
+    }
+
     return Settings(
         should_have_pre_game_delay=False,
         should_dire_be_native_bots=False,
         grant_global_vision=False,
         spectator_mode=True,
         auto_restart_client_on_server_restart=True,
-        max_game_duration=-1,
+        max_game_duration=-1,  # in minutes
         radiant_party_names=app.state.bots[TeamName.RADIANT].party,
         dire_party_names=app.state.bots[TeamName.DIRE].party,
         game_number=NUMBER_OF_GAMES - app.state.games_remaining,
@@ -76,32 +101,12 @@ async def game_update(team: TeamName, world_info: World) -> list[dict[str, Comma
 async def statistics(
     fields: Annotated[dict[str, str | int | float], Body(embed=True)]
 ) -> None:
-    stat_fields = [
-        "id",
-        "team",
-        "name",
-        "gold",
-        "level",
-        "dmg_dealt_hero",
-        "dmg_dealt_struct",
-        "dmg_dealt_creep",
-        "total_dmg_dealt",
-        "dmg_received_hero",
-        "dmg_received_struct",
-        "dmg_received_creep",
-        "total_dmg_received",
-        "last_hits",
-        "kills",
-        "deaths",
-        "assists",
-        "denies",
-    ]
     game_time = fields.pop("game_time")
 
     stats: dict[int, dict[str, str | int | float]] = {}
     for player_id in range(10):
         stats[player_id] = {}
-        for stat_name in stat_fields:
+        for stat_name in STAT_FIELDS:
             stats[player_id][stat_name] = fields[f"{player_id}_{stat_name}"]
 
     game_number = NUMBER_OF_GAMES - app.state.games_remaining
@@ -113,11 +118,11 @@ async def statistics(
     is_new_csv = not csv_path.exists()
     with open(csv_path, "at") as f:
         if is_new_csv:
-            headers = ["game_time", "player_id"] + stat_fields
+            headers = ["game_time", "player_id"] + STAT_FIELDS
             f.write(",".join(headers) + "\n")
         for player_id in stats.keys():
             line = [str(game_time), str(player_id)] + [
-                str(stats[player_id][k]) for k in stat_fields
+                str(stats[player_id][k]) for k in STAT_FIELDS
             ]
             f.write(",".join(line) + "\n")
 
