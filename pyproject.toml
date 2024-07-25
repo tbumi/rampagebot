@@ -8,7 +8,7 @@ package-mode = false
 python = "^3.12"
 fastapi = "^0.111.0"
 ray = {version = "^2.32.0", extras = ["rllib"]}
-tensorflow = "^2.17.0"
+torch = "^2.4.0"
 
 
 [tool.poetry.group.dev.dependencies]
