@@ -8,7 +8,7 @@ from ray.rllib.env.policy_server_input import PolicyServerInput
 from rampagebot.rl.models import GymAction, Observation
 
 SERVER_ADDRESS = "localhost"
-SERVER_PORT = "9900"
+SERVER_PORT = 9900
 
 
 def main():
@@ -23,15 +23,7 @@ def main():
             ),
             action_space=gym.spaces.Discrete(len(GymAction)),
         )
-        .framework("tf2")
-        .api_stack(
-            enable_rl_module_and_learner=True,
-            enable_env_runner_and_connector_v2=True,
-        )
-        .learners(
-            num_learners=1,
-            num_gpus_per_learner=1,
-        )
+        .framework("torch")
         .offline_data(
             input_=lambda ioctx: PolicyServerInput(
                 ioctx,
