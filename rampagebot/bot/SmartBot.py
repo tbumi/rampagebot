@@ -2,11 +2,6 @@ import json
 from typing import cast
 
 from rampagebot.bot.heroes.Hero import Hero
-from rampagebot.bot.heroes.Lion import Lion
-from rampagebot.bot.heroes.PhantomAssassin import PhantomAssassin
-from rampagebot.bot.heroes.Sniper import Sniper
-from rampagebot.bot.heroes.SpiritBreaker import SpiritBreaker
-from rampagebot.bot.heroes.WitchDoctor import WitchDoctor
 from rampagebot.bot.utils import (
     BOT_LEFT,
     TOP_RIGHT,
@@ -36,16 +31,9 @@ ITEMS_JSON_PATH = "rampagebot/static/items.json"
 
 
 class SmartBot:
-    def __init__(self, team: TeamName) -> None:
+    def __init__(self, team: TeamName, heroes: list[Hero]) -> None:
         self.team = team
-        self.heroes: list[Hero] = [
-            Sniper(team),
-            PhantomAssassin(team),
-            SpiritBreaker(team),
-            WitchDoctor(team),
-            Lion(team),
-        ]
-        self.party = [hero.name for hero in self.heroes]
+        self.heroes = heroes
 
         with open(ITEMS_JSON_PATH, "rt") as f:
             self.items_data = json.load(f)

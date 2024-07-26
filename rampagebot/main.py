@@ -7,6 +7,16 @@ from fastapi import FastAPI, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 
+from rampagebot.bot.heroes.Jakiro import Jakiro
+from rampagebot.bot.heroes.Juggernaut import Juggernaut
+from rampagebot.bot.heroes.Lion import Lion
+from rampagebot.bot.heroes.OutworldDestroyer import OutworldDestroyer
+from rampagebot.bot.heroes.PhantomAssassin import PhantomAssassin
+from rampagebot.bot.heroes.ShadowShaman import ShadowShaman
+from rampagebot.bot.heroes.Sniper import Sniper
+from rampagebot.bot.heroes.SpiritBreaker import SpiritBreaker
+from rampagebot.bot.heroes.Viper import Viper
+from rampagebot.bot.heroes.WitchDoctor import WitchDoctor
 from rampagebot.bot.SmartBot import SmartBot
 from rampagebot.models.Commands import Command
 from rampagebot.models.GameStatusResponse import GameStatusResponse
@@ -74,8 +84,27 @@ async def validation_exception_handler(request, exc):
 async def send_settings() -> Settings:
     # this endpoint is called on every new game
     app.state.bots = {
-        TeamName.RADIANT: SmartBot(TeamName.RADIANT),
-        TeamName.DIRE: SmartBot(TeamName.DIRE),
+        # TODO: figure out a way to reduce duplication of team name
+        TeamName.RADIANT: SmartBot(
+            TeamName.RADIANT,
+            [
+                Sniper(TeamName.RADIANT),
+                PhantomAssassin(TeamName.RADIANT),
+                SpiritBreaker(TeamName.RADIANT),
+                WitchDoctor(TeamName.RADIANT),
+                Lion(TeamName.RADIANT),
+            ],
+        ),
+        TeamName.DIRE: SmartBot(
+            TeamName.DIRE,
+            [
+                OutworldDestroyer(TeamName.DIRE),
+                Viper(TeamName.DIRE),
+                Juggernaut(TeamName.DIRE),
+                ShadowShaman(TeamName.DIRE),
+                Jakiro(TeamName.DIRE),
+            ],
+        ),
     }
     # app.state.episode_id = app.state.rl_client.start_episode()
 
@@ -86,8 +115,10 @@ async def send_settings() -> Settings:
         spectator_mode=True,
         auto_restart_client_on_server_restart=True,
         max_game_duration=-1,  # in minutes
-        radiant_party_names=app.state.bots[TeamName.RADIANT].party,
-        dire_party_names=app.state.bots[TeamName.DIRE].party,
+        radiant_party_names=[
+            hero.name for hero in app.state.bots[TeamName.RADIANT].heroes
+        ],
+        dire_party_names=[hero.name for hero in app.state.bots[TeamName.DIRE].heroes],
         game_number=NUMBER_OF_GAMES - app.state.games_remaining,
     )
 
@@ -115,16 +146,15 @@ async def game_update_endpoint(game_update: GameUpdate) -> list[dict[str, Comman
         f"{team.value}_{i}": GymAction.farm for i in range(1, 6) for team in TeamName
     }
 
-    all_commands = []
+    commands = []
     for team in TeamName:
         world = World(entities=getattr(game_update, f"{team.value}_entities"))
-        commands = app.state.bots[team].generate_next_commands(world, actions)
-        all_commands.extend(commands)
+        commands += app.state.bots[team].generate_next_commands(world, actions)
 
-    if all_commands:
-        print(all_commands)
+    if commands:
+        print(commands)
 
-    return all_commands
+    return commands
 
 
 @app.post("/api/restart_game", status_code=status.HTTP_204_NO_CONTENT)
