@@ -1,7 +1,5 @@
-from dataclasses import fields
-
-import gymnasium as gym
 import ray
+from gymnasium.spaces import Box, Discrete
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.env.policy_server_input import PolicyServerInput
 
@@ -18,10 +16,10 @@ def main():
         PPOConfig()
         .environment(
             env=None,
-            observation_space=gym.spaces.Box(
-                float("-inf"), float("inf"), (len(fields(Observation)),)
+            observation_space=Box(
+                float("-inf"), float("inf"), (len(Observation.model_fields),)
             ),
-            action_space=gym.spaces.Discrete(len(GymAction)),
+            action_space=Discrete(len(GymAction)),
         )
         .framework("torch")
         .offline_data(
@@ -33,7 +31,6 @@ def main():
         )
         .env_runners(
             num_env_runners=0,
-            enable_connectors=False,
         )
         .evaluation(off_policy_estimation_methods={})
     )
@@ -45,7 +42,7 @@ def main():
         }
     )
 
-    algo = config.build()
+    # algo = config.build()
 
 
 if __name__ == "__main__":

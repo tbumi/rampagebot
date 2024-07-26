@@ -2,22 +2,24 @@ import json
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated
 
-from fastapi import Body, FastAPI, Response, status
+from fastapi import FastAPI, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 
 from rampagebot.bot.SmartBot import SmartBot
-from rampagebot.IdleBot import IdleBot
 from rampagebot.models.Commands import Command
 from rampagebot.models.GameStatusResponse import GameStatusResponse
+from rampagebot.models.GameUpdate import GameUpdate
 from rampagebot.models.Settings import Settings
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
+from rampagebot.rl.models import GymAction
 
-# TODO accept input
-NUMBER_OF_GAMES = 2
+# from ray.rllib.env.policy_client import PolicyClient
+# from rampagebot.rl.functions import calculate_rewards, generate_rl_observations
+
+NUMBER_OF_GAMES = 1
 
 STAT_FIELDS = [
     "id",
@@ -40,11 +42,18 @@ STAT_FIELDS = [
     "denies",
 ]
 
+# policy server for RL training
+SERVER_ADDRESS = "localhost"
+SERVER_PORT = 9900
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.started_time = datetime.now()
     app.state.games_remaining = NUMBER_OF_GAMES
+    # app.state.rl_client = PolicyClient(
+    #     f"http://{SERVER_ADDRESS}:{SERVER_PORT}", inference_mode="remote"
+    # )
     yield
 
 
@@ -66,8 +75,9 @@ async def send_settings() -> Settings:
     # this endpoint is called on every new game
     app.state.bots = {
         TeamName.RADIANT: SmartBot(TeamName.RADIANT),
-        TeamName.DIRE: IdleBot(TeamName.DIRE),
+        TeamName.DIRE: SmartBot(TeamName.DIRE),
     }
+    # app.state.episode_id = app.state.rl_client.start_episode()
 
     return Settings(
         should_have_pre_game_delay=False,
@@ -82,49 +92,39 @@ async def send_settings() -> Settings:
     )
 
 
-@app.post("/api/{team}_update")
-async def game_update(team: TeamName, world_info: World) -> list[dict[str, Command]]:
-    if team == TeamName.RADIANT:
-        with open("json_samples/game_update.json", "wt") as f:
-            f.write(world_info.model_dump_json(by_alias=True))
+@app.post("/api/game_update")
+async def game_update_endpoint(game_update: GameUpdate) -> list[dict[str, Command]]:
+    if game_update.update_count == 0:
+        dir_path = Path("./json_samples")
+        dir_path.mkdir(parents=True, exist_ok=True)
+        with open(dir_path / "game_update.json", "wt") as f:
+            f.write(game_update.model_dump_json(by_alias=True))
 
-    app.state.bots[team].game_ticks += 1
-    commands = app.state.bots[team].generate_next_commands(world_info)
+    # if game_update.update_count % 3 == 0:
+    #     # don't update rewards on the very first game step
+    #     # as there haven't been any actions
+    #     if game_update.update_count > 0:
+    #         rewards = calculate_rewards(game_update)
+    #         app.state.rl_client.log_returns(app.state.episode_id, rewards, {}, {})
 
-    if team == TeamName.RADIANT and commands:
-        print(commands)
+    #     observations = generate_rl_observations(game_update)
+    #     actions = app.state.rl_client.get_action(app.state.episode_id, observations)
+    # else:
+    #     actions = None
+    actions = {
+        f"{team.value}_{i}": GymAction.farm for i in range(1, 6) for team in TeamName
+    }
 
-    return commands
+    all_commands = []
+    for team in TeamName:
+        world = World(entities=getattr(game_update, f"{team.value}_entities"))
+        commands = app.state.bots[team].generate_next_commands(world, actions)
+        all_commands.extend(commands)
 
+    if all_commands:
+        print(all_commands)
 
-@app.post("/api/statistics", status_code=status.HTTP_204_NO_CONTENT)
-async def statistics(
-    fields: Annotated[dict[str, str | int | float], Body(embed=True)]
-) -> None:
-    game_time = fields.pop("game_time")
-
-    stats: dict[int, dict[str, str | int | float]] = {}
-    for player_id in range(10):
-        stats[player_id] = {}
-        for stat_name in STAT_FIELDS:
-            stats[player_id][stat_name] = fields[f"{player_id}_{stat_name}"]
-
-    game_number = NUMBER_OF_GAMES - app.state.games_remaining
-    datestr = app.state.started_time.strftime("%Y%m%d_%H%M%S")
-    dir_path = Path("./statistics")
-    dir_path.mkdir(parents=True, exist_ok=True)
-    csv_path = dir_path / f"{datestr}_statistics_{game_number}.csv"
-
-    is_new_csv = not csv_path.exists()
-    with open(csv_path, "at") as f:
-        if is_new_csv:
-            headers = ["game_time", "player_id"] + STAT_FIELDS
-            f.write(",".join(headers) + "\n")
-        for player_id in stats.keys():
-            line = [str(game_time), str(player_id)] + [
-                str(stats[player_id][k]) for k in STAT_FIELDS
-            ]
-            f.write(",".join(line) + "\n")
+    return all_commands
 
 
 @app.post("/api/restart_game", status_code=status.HTTP_204_NO_CONTENT)
@@ -135,6 +135,7 @@ async def restart_game() -> None:
 
 @app.post("/api/game_ended")
 async def game_ended() -> GameStatusResponse:
+    # app.state.rl_client.end_episode(app.state.episode_id)
     # TODO handle end statistics
     app.state.games_remaining -= 1
     if app.state.games_remaining > 0:

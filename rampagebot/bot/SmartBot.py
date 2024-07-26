@@ -30,6 +30,7 @@ from rampagebot.models.dota.BaseEntity import BaseEntity
 from rampagebot.models.dota.EntityCourier import EntityCourier
 from rampagebot.models.TeamName import TeamName, enemy_team
 from rampagebot.models.World import World
+from rampagebot.rl.models import GymAction
 
 ITEMS_JSON_PATH = "rampagebot/static/items.json"
 
@@ -45,15 +46,16 @@ class SmartBot:
             Lion(team),
         ]
         self.party = [hero.name for hero in self.heroes]
-        self.game_ticks = 0
 
         with open(ITEMS_JSON_PATH, "rt") as f:
             self.items_data = json.load(f)
 
-    def generate_next_commands(self, world: World) -> list[dict[str, Command]]:
+    def generate_next_commands(
+        self, world: World, actions: dict[str, GymAction] | None
+    ) -> list[dict[str, Command]]:
         commands: list[dict[str, Command]] = []
 
-        for hero in self.heroes:
+        for i, hero in enumerate(self.heroes):
             hero.info = world.find_player_hero_entity(hero.name)
 
             if hero.info is None:
@@ -103,7 +105,21 @@ class SmartBot:
                 commands.append({hero.name: BuyCommand(item=f"item_{next_item}")})
                 continue
 
-            next_command = self.farm(hero, world)
+            agent_name = f"{self.team.value}_{i+1}"
+            if actions is None:
+                next_command = None
+            elif actions[agent_name] == GymAction.farm:
+                next_command = self.farm(hero, world)
+            elif actions[agent_name] == GymAction.push:
+                next_command = self.push_lane(hero, world)
+            elif actions[agent_name] == GymAction.fight:
+                next_command = hero.fight(world)
+            elif actions[agent_name] == GymAction.retreat:
+                next_command = self.retreat(hero, world)
+            else:
+                # futureproof
+                next_command = None
+
             if next_command is not None:
                 commands.append({hero.name: next_command})
                 continue

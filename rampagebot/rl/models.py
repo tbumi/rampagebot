@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from enum import Enum
 
 from pydantic import BaseModel
@@ -11,8 +10,8 @@ class GymAction(str, Enum):
     retreat = "retreat"
 
 
-@dataclass
-class Observation:
+class Observation(BaseModel):
+    # TODO: add float constraints
     # global
     game_time: float
     is_day: float
@@ -32,12 +31,12 @@ class Observation:
     cooldown_ability_3: float
     cooldown_ability_4: float
 
-    distance_to_ally_hero_1: float  # Inf if unknown
+    distance_to_ally_hero_1: float
     distance_to_ally_hero_2: float
     distance_to_ally_hero_3: float
     distance_to_ally_hero_4: float
     pct_health_of_ally_hero_1: float  # fraction of health / max_health
-    pct_health_of_ally_hero_2: float  # TODO store last x timesteps?
+    pct_health_of_ally_hero_2: float  # TODO: store last x timesteps?
     pct_health_of_ally_hero_3: float
     pct_health_of_ally_hero_4: float
     distance_to_enemy_hero_1: float  # Inf if unknown
@@ -72,10 +71,3 @@ class Observation:
     pct_health_of_enemy_tower_t3bot: float
     pct_health_of_enemy_tower_t4top: float
     pct_health_of_enemy_tower_t4bot: float
-
-
-class GymInfo(BaseModel):
-    observation: list[Observation]
-    reward: list[float]
-    terminated: list[bool]
-    truncated: list[bool]
