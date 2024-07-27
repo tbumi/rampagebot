@@ -3,11 +3,11 @@ from enum import Enum
 from pydantic import BaseModel
 
 
-class GymAction(str, Enum):
-    farm = "farm"
-    push = "push"
-    fight = "fight"
-    retreat = "retreat"
+class GymAction(Enum):
+    FARM = 0
+    PUSH = 1
+    FIGHT = 2
+    RETREAT = 3
 
 
 class Observation(BaseModel):

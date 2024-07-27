@@ -34,6 +34,7 @@ class SmartBot:
     def __init__(self, team: TeamName, heroes: list[Hero]) -> None:
         self.team = team
         self.heroes = heroes
+        self.last_issued_actions: dict[str, GymAction] | None = None
 
         with open(ITEMS_JSON_PATH, "rt") as f:
             self.items_data = json.load(f)
@@ -93,20 +94,28 @@ class SmartBot:
                 commands.append({hero.name: BuyCommand(item=f"item_{next_item}")})
                 continue
 
+            if actions is not None:
+                self.last_issued_actions = actions
+            elif self.last_issued_actions is not None:
+                actions = self.last_issued_actions
+
             agent_name = f"{self.team.value}_{i+1}"
             if actions is None:
                 next_command = None
-            elif actions[agent_name] == GymAction.farm:
-                next_command = self.farm(hero, world)
-            elif actions[agent_name] == GymAction.push:
-                next_command = self.push_lane(hero, world)
-            elif actions[agent_name] == GymAction.fight:
-                next_command = hero.fight(world)
-            elif actions[agent_name] == GymAction.retreat:
-                next_command = self.retreat(hero, world)
             else:
-                # futureproof
-                next_command = None
+                next_action = GymAction(actions[agent_name])
+                # print(f"{agent_name}: {next_action}")
+                if next_action == GymAction.FARM:
+                    next_command = self.farm(hero, world)
+                elif next_action == GymAction.PUSH:
+                    next_command = self.push_lane(hero, world)
+                elif next_action == GymAction.FIGHT:
+                    next_command = hero.fight(world)
+                elif next_action == GymAction.RETREAT:
+                    next_command = self.retreat(hero, world)
+                else:
+                    # futureproof
+                    next_command = None
 
             if next_command is not None:
                 commands.append({hero.name: next_command})

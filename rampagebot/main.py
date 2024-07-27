@@ -3,9 +3,10 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, Request, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
+from ray.rllib.env.policy_client import PolicyClient
 
 from rampagebot.bot.heroes.Jakiro import Jakiro
 from rampagebot.bot.heroes.Juggernaut import Juggernaut
@@ -24,10 +25,7 @@ from rampagebot.models.GameUpdate import GameUpdate
 from rampagebot.models.Settings import Settings
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
-from rampagebot.rl.models import GymAction
-
-# from ray.rllib.env.policy_client import PolicyClient
-# from rampagebot.rl.functions import calculate_rewards, generate_rl_observations
+from rampagebot.rl.functions import calculate_rewards, generate_rl_observations
 
 NUMBER_OF_GAMES = 1
 
@@ -54,16 +52,16 @@ STAT_FIELDS = [
 
 # policy server for RL training
 SERVER_ADDRESS = "localhost"
-SERVER_PORT = 9900
+SERVER_PORT = 9090
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.started_time = datetime.now()
     app.state.games_remaining = NUMBER_OF_GAMES
-    # app.state.rl_client = PolicyClient(
-    #     f"http://{SERVER_ADDRESS}:{SERVER_PORT}", inference_mode="remote"
-    # )
+    app.state.rl_client = PolicyClient(
+        f"http://{SERVER_ADDRESS}:{SERVER_PORT}", inference_mode="remote"
+    )
     yield
 
 
@@ -106,7 +104,8 @@ async def send_settings() -> Settings:
             ],
         ),
     }
-    # app.state.episode_id = app.state.rl_client.start_episode()
+    app.state.episode_id = app.state.rl_client.start_episode()
+    app.state.last_observation = {}
 
     return Settings(
         should_have_pre_game_delay=False,
@@ -124,27 +123,31 @@ async def send_settings() -> Settings:
 
 
 @app.post("/api/game_update")
-async def game_update_endpoint(game_update: GameUpdate) -> list[dict[str, Command]]:
+async def game_update_endpoint(
+    game_update: GameUpdate, req: Request
+) -> list[dict[str, Command]]:
     if game_update.update_count == 0:
         dir_path = Path("./json_samples")
         dir_path.mkdir(parents=True, exist_ok=True)
-        with open(dir_path / "game_update.json", "wt") as f:
-            f.write(game_update.model_dump_json(by_alias=True))
+        with open(dir_path / "game_update.json", "wb") as f:
+            f.write(await req.body())
 
-    # if game_update.update_count % 3 == 0:
-    #     # don't update rewards on the very first game step
-    #     # as there haven't been any actions
-    #     if game_update.update_count > 0:
-    #         rewards = calculate_rewards(game_update)
-    #         app.state.rl_client.log_returns(app.state.episode_id, rewards, {}, {})
+    if game_update.update_count % 3 == 0:
+        # don't update rewards on the very first game step
+        # as there haven't been any actions
+        if game_update.update_count > 0:
+            rewards = calculate_rewards(game_update)
+            app.state.rl_client.log_returns(app.state.episode_id, rewards)
 
-    #     observations = generate_rl_observations(game_update)
-    #     actions = app.state.rl_client.get_action(app.state.episode_id, observations)
-    # else:
-    #     actions = None
-    actions = {
-        f"{team.value}_{i}": GymAction.farm for i in range(1, 6) for team in TeamName
-    }
+        observations = generate_rl_observations(game_update)
+        # print(f"{observations=}")
+        app.state.last_observation = observations
+        actions = app.state.rl_client.get_action(app.state.episode_id, observations)
+    else:
+        actions = None
+
+    if actions:
+        print(f"{actions=}")
 
     commands = []
     for team in TeamName:
@@ -152,25 +155,22 @@ async def game_update_endpoint(game_update: GameUpdate) -> list[dict[str, Comman
         commands += app.state.bots[team].generate_next_commands(world, actions)
 
     if commands:
-        print(commands)
+        print(f"{commands=}")
 
     return commands
 
 
 @app.post("/api/restart_game", status_code=status.HTTP_204_NO_CONTENT)
 async def restart_game() -> None:
-    for bot in app.state.bots.values():
-        bot.game_ticks = 0
+    return
 
 
 @app.post("/api/game_ended")
 async def game_ended() -> GameStatusResponse:
-    # app.state.rl_client.end_episode(app.state.episode_id)
-    # TODO handle end statistics
+    app.state.rl_client.end_episode(app.state.episode_id, app.state.last_observation)
+    # TODO: handle end statistics
     app.state.games_remaining -= 1
     if app.state.games_remaining > 0:
-        for bot in app.state.bots.values():
-            bot.game_ticks = 0
         return GameStatusResponse(status="restart")
     else:
         return GameStatusResponse(status="done")
