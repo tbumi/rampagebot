@@ -126,36 +126,42 @@ async def send_settings() -> Settings:
 async def game_update_endpoint(
     game_update: GameUpdate, req: Request
 ) -> list[dict[str, Command]]:
-    if game_update.update_count == 0:
+    if game_update.update_count % 10 == 0:
         dir_path = Path("./json_samples")
         dir_path.mkdir(parents=True, exist_ok=True)
         with open(dir_path / "game_update.json", "wb") as f:
             f.write(await req.body())
 
+    for team in TeamName:
+        app.state.bots[team].world = World(
+            entities=getattr(game_update, f"{team.value}_entities")
+        )
+        for hero in app.state.bots[team].heroes:
+            hero.info = app.state.bots[team].world.find_player_hero_entity(hero.name)
+
     if game_update.update_count % 3 == 0:
         # don't update rewards on the very first game step
         # as there haven't been any actions
         if game_update.update_count > 0:
-            rewards = calculate_rewards(game_update)
+            rewards = calculate_rewards(game_update, app.state.bots)
             app.state.rl_client.log_returns(app.state.episode_id, rewards)
 
-        observations = generate_rl_observations(game_update)
+        observations = generate_rl_observations(game_update, app.state.bots)
         # print(f"{observations=}")
         app.state.last_observation = observations
         actions = app.state.rl_client.get_action(app.state.episode_id, observations)
     else:
-        actions = None
+        actions = {}
 
-    if actions:
-        print(f"{actions=}")
+    # if actions:
+    #     print(f"{actions=}")
 
     commands = []
     for team in TeamName:
-        world = World(entities=getattr(game_update, f"{team.value}_entities"))
-        commands += app.state.bots[team].generate_next_commands(world, actions)
+        commands += app.state.bots[team].generate_next_commands(actions)
 
-    if commands:
-        print(f"{commands=}")
+    # if commands:
+    #     print(f"{commands=}")
 
     return commands
 
@@ -167,6 +173,8 @@ async def restart_game() -> None:
 
 @app.post("/api/game_ended")
 async def game_ended() -> GameStatusResponse:
+    # rewards = calculate_rewards(game_update, app.state.bots)
+    # app.state.rl_client.log_returns(app.state.episode_id, rewards)
     app.state.rl_client.end_episode(app.state.episode_id, app.state.last_observation)
     # TODO: handle end statistics
     app.state.games_remaining -= 1

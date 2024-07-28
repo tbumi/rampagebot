@@ -67,6 +67,10 @@ class PhantomAssassin(Hero):
                 "mithril_hammer",
                 "blight_stone",
             ],
+            ability_1="phantom_assassin_stifling_dagger",
+            ability_2="phantom_assassin_phantom_strike",
+            ability_3="phantom_assassin_blur",
+            ability_4="phantom_assassin_coup_de_grace",
         )
 
     def fight(self, world: World) -> Command | None:

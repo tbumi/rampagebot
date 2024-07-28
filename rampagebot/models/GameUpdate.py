@@ -35,6 +35,8 @@ class GameUpdate(BaseModel):
     radiant_entities: EntityCollection
     dire_entities: EntityCollection
     game_time: float
+    is_day: bool
+    time_of_day: float
     game_number: int
     update_count: int
     statistics: dict[str, float | int | str]

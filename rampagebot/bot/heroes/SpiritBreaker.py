@@ -65,6 +65,10 @@ class SpiritBreaker(Hero):
                 "vitality_booster",
                 "energy_booster",
             ],
+            ability_1="spirit_breaker_charge_of_darkness",
+            ability_2="spirit_breaker_bulldoze",
+            ability_3="spirit_breaker_greater_bash",
+            ability_4="spirit_breaker_nether_strike",
         )
 
     def fight(self, world: World) -> Command | None:

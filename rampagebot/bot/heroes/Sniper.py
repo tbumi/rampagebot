@@ -66,6 +66,10 @@ class Sniper(Hero):
                 "javelin",
                 "gloves",
             ],
+            ability_1="sniper_shrapnel",
+            ability_2="sniper_headshot",
+            ability_3="sniper_take_aim",
+            ability_4="sniper_assassinate",
         )
 
     def fight(self, world: World) -> Command | None:

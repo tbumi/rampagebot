@@ -18,6 +18,12 @@ class Hero:
     ability_build: list[str]
     item_build: list[str]
 
+    # for RL observation
+    ability_1: str
+    ability_2: str
+    ability_3: str
+    ability_4: str
+
     moving: bool = False
     at_lane: bool = False
     courier_transferring_items: bool = False

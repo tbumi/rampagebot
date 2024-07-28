@@ -59,6 +59,10 @@ class Lion(Hero):
                 "void_stone",
                 "recipe_aether_lens",
             ],
+            ability_1="lion_impale",
+            ability_2="lion_voodoo",
+            ability_3="lion_mana_drain",
+            ability_4="lion_finger_of_death",
         )
 
     def fight(self, world: World) -> Command | None:

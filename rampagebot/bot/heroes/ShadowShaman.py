@@ -26,6 +26,10 @@ class ShadowShaman(Hero):
                 "faerie_fire",
                 "blood_grenade",
             ],
+            ability_1="shadow_shaman_ether_shock",
+            ability_2="shadow_shaman_voodoo",
+            ability_3="shadow_shaman_shackles",
+            ability_4="shadow_shaman_mass_serpent_ward",
         )
 
     def fight(self, world: World) -> Command | None:

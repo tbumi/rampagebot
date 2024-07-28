@@ -26,6 +26,10 @@ class Jakiro(Hero):
                 "enchanted_mango",
                 "blood_grenade",
             ],
+            ability_1="jakiro_dual_breath",
+            ability_2="jakiro_ice_path",
+            ability_3="jakiro_liquid_fire",
+            ability_4="jakiro_macropyre",
         )
 
     def fight(self, world: World) -> Command | None:

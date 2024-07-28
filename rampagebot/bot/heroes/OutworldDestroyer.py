@@ -25,6 +25,10 @@ class OutworldDestroyer(Hero):
                 "faerie_fire",
                 "mantle",
             ],
+            ability_1="obsidian_destroyer_arcane_orb",
+            ability_2="obsidian_destroyer_astral_imprisonment",
+            ability_3="obsidian_destroyer_equilibrium",
+            ability_4="obsidian_destroyer_sanity_eclipse",
         )
 
     def fight(self, world: World) -> Command | None:

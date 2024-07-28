@@ -34,19 +34,20 @@ class SmartBot:
     def __init__(self, team: TeamName, heroes: list[Hero]) -> None:
         self.team = team
         self.heroes = heroes
-        self.last_issued_actions: dict[str, GymAction] | None = None
+        self.world: World | None = None
+        self.last_issued_actions: dict[str, int] = {}
 
         with open(ITEMS_JSON_PATH, "rt") as f:
             self.items_data = json.load(f)
 
     def generate_next_commands(
-        self, world: World, actions: dict[str, GymAction] | None
+        self, actions: dict[str, int]
     ) -> list[dict[str, Command]]:
+        assert self.world is not None
+        self.last_issued_actions = actions
         commands: list[dict[str, Command]] = []
 
         for i, hero in enumerate(self.heroes):
-            hero.info = world.find_player_hero_entity(hero.name)
-
             if hero.info is None:
                 # hero is dead
                 hero.moving = False
@@ -57,11 +58,13 @@ class SmartBot:
                 continue
 
             if hero.info.has_tower_aggro or hero.info.has_aggro:
-                tower = find_outermost_tower(self.team, world, hero.lane)
+                tower = find_outermost_tower(self.team, self.world, hero.lane)
                 entity: BaseEntity | None = tower[1]
                 if entity is None:
                     team = TeamName_to_goodbad(self.team)
-                    entity = world.find_building_entity(f"ent_dota_fountain_{team}")
+                    entity = self.world.find_building_entity(
+                        f"ent_dota_fountain_{team}"
+                    )
                     assert entity is not None
                 commands.append({hero.name: MoveCommand.to(entity.origin)})
                 continue
@@ -74,7 +77,7 @@ class SmartBot:
                 commands.append({hero.name: LevelUpCommand(ability=next_ability_index)})
                 continue
 
-            courier = world.entities.get(hero.info.courier_id)
+            courier = self.world.entities.get(hero.info.courier_id)
             if courier is not None:
                 courier = cast(EntityCourier, courier)
                 if any(courier.items.values()):
@@ -94,41 +97,40 @@ class SmartBot:
                 commands.append({hero.name: BuyCommand(item=f"item_{next_item}")})
                 continue
 
-            if actions is not None:
-                self.last_issued_actions = actions
-            elif self.last_issued_actions is not None:
-                actions = self.last_issued_actions
-
             agent_name = f"{self.team.value}_{i+1}"
-            if actions is None:
+            next_action_number = actions.get(
+                agent_name, self.last_issued_actions.get(agent_name)
+            )
+            if next_action_number is None:
                 next_command = None
             else:
-                next_action = GymAction(actions[agent_name])
-                # print(f"{agent_name}: {next_action}")
+                next_action = GymAction(next_action_number)
+                print(f"{agent_name}: {next_action}")
                 if next_action == GymAction.FARM:
-                    next_command = self.farm(hero, world)
+                    next_command = self.farm(hero)
                 elif next_action == GymAction.PUSH:
-                    next_command = self.push_lane(hero, world)
+                    next_command = self.push_lane(hero)
                 elif next_action == GymAction.FIGHT:
-                    next_command = hero.fight(world)
+                    next_command = hero.fight(self.world)
                 elif next_action == GymAction.RETREAT:
-                    next_command = self.retreat(hero, world)
+                    next_command = self.retreat(hero)
                 else:
-                    # futureproof
-                    next_command = None
+                    raise NotImplementedError(
+                        f"unimplemented gym action: {next_action}"
+                    )
 
             if next_command is not None:
                 commands.append({hero.name: next_command})
-                continue
 
         return commands
 
-    def push_lane(self, hero: Hero, world: World) -> Command | None:
+    def push_lane(self, hero: Hero) -> Command | None:
+        assert self.world is not None
         assert hero.info is not None
         my_team = TeamName_to_goodbad(self.team)
 
         if not hero.at_lane:
-            _, tower_entity = world.find_tower_entity(
+            _, tower_entity = self.world.find_tower_entity(
                 f"dota_{my_team}guys_tower1_{hero.lane.value}"
             )
             assert tower_entity is not None
@@ -140,7 +142,7 @@ class SmartBot:
                 hero.at_lane = True
                 hero.moving = False
 
-        creeps = find_nearest_enemy_creeps(hero.info.origin, world, self.team, 1)
+        creeps = find_nearest_enemy_creeps(hero.info.origin, self.world, self.team, 1)
         if creeps:
             creep_id, creep_info, _ = creeps[0]
             if (
@@ -151,17 +153,18 @@ class SmartBot:
             else:
                 return AttackCommand(target=creep_id)
 
-        tower_id, _ = find_outermost_tower(enemy_team(self.team), world, hero.lane)
+        tower_id, _ = find_outermost_tower(enemy_team(self.team), self.world, hero.lane)
         if tower_id is None:
             return None
         return AttackCommand(target=tower_id)
 
-    def farm(self, hero: Hero, world: World) -> Command | None:
+    def farm(self, hero: Hero) -> Command | None:
+        assert self.world is not None
         assert hero.info is not None
 
         my_team = TeamName_to_goodbad(self.team)
         if not hero.at_lane:
-            _, tower_entity = world.find_tower_entity(
+            _, tower_entity = self.world.find_tower_entity(
                 f"dota_{my_team}guys_tower1_{hero.lane.value}"
             )
             assert tower_entity is not None
@@ -173,7 +176,7 @@ class SmartBot:
                 hero.at_lane = True
                 hero.moving = False
 
-        creeps = find_enemy_creeps_in_lane(world, hero.lane, self.team)
+        creeps = find_enemy_creeps_in_lane(self.world, hero.lane, self.team)
         if not creeps:
             return None
 
@@ -183,7 +186,7 @@ class SmartBot:
         ]
         _, nearest_creep = min(distances, key=lambda x: x[1])[0]
         creep_wave = find_nearest_enemy_creeps(
-            nearest_creep.origin, world, self.team, 10
+            nearest_creep.origin, self.world, self.team, 10
         )
         creep_with_lowest_health_id, creep_with_lowest_health, _ = min(
             [(c, c[1].health) for c in creep_wave], key=lambda x: x[1]
@@ -200,6 +203,8 @@ class SmartBot:
 
         return MoveCommand.to(attack_range_distance)
 
-    def retreat(self, hero: Hero, world: World) -> Command | None:
+    def retreat(self, hero: Hero) -> Command | None:
+        assert self.world is not None
+        assert hero.info is not None
         # TODO
         return None

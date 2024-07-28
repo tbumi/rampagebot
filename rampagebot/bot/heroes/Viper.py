@@ -24,6 +24,10 @@ class Viper(Hero):
                 "slippers",
                 "circlet",
             ],
+            ability_1="viper_poison_attack",
+            ability_2="viper_nethertoxin",
+            ability_3="viper_corrosive_skin",
+            ability_4="viper_viper_strike",
         )
 
     def fight(self, world: World) -> Command | None:

@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class GymAction(Enum):
@@ -11,7 +11,9 @@ class GymAction(Enum):
 
 
 class Observation(BaseModel):
-    # TODO: add float constraints
+    model_config = ConfigDict(extra="forbid")
+
+    # TODO: add float constraints and use them for generating Box limits
     # global
     game_time: float
     is_day: float
@@ -30,16 +32,17 @@ class Observation(BaseModel):
     cooldown_ability_2: float
     cooldown_ability_3: float
     cooldown_ability_4: float
+    current_lane: float  # 0=dead, 1=top, 2=mid, 3=bot
 
     distance_to_ally_hero_1: float
     distance_to_ally_hero_2: float
     distance_to_ally_hero_3: float
     distance_to_ally_hero_4: float
     pct_health_of_ally_hero_1: float  # fraction of health / max_health
-    pct_health_of_ally_hero_2: float  # TODO: store last x timesteps?
+    pct_health_of_ally_hero_2: float
     pct_health_of_ally_hero_3: float
     pct_health_of_ally_hero_4: float
-    distance_to_enemy_hero_1: float  # Inf if unknown
+    distance_to_enemy_hero_1: float
     distance_to_enemy_hero_2: float
     distance_to_enemy_hero_3: float
     distance_to_enemy_hero_4: float
@@ -60,7 +63,7 @@ class Observation(BaseModel):
     distance_to_enemy_tower_t3bot: float
     distance_to_enemy_tower_t4top: float
     distance_to_enemy_tower_t4bot: float
-    pct_health_of_enemy_tower_t1top: float
+    pct_health_of_enemy_tower_t1top: float  # fraction of health / max_health
     pct_health_of_enemy_tower_t1mid: float
     pct_health_of_enemy_tower_t1bot: float
     pct_health_of_enemy_tower_t2top: float

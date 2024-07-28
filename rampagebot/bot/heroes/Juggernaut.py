@@ -27,6 +27,10 @@ class Juggernaut(Hero):
                 "quelling_blade",
                 "recipe_wraith_band",
             ],
+            ability_1="juggernaut_blade_fury",
+            ability_2="juggernaut_healing_ward",
+            ability_3="juggernaut_blade_dance",
+            ability_4="juggernaut_omni_slash",
         )
 
     def fight(self, world: World) -> Command | None:

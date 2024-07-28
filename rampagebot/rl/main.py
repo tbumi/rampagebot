@@ -57,13 +57,11 @@ def main():
             policies_to_train=["main"],
         )
     )
-    # config.update_from_dict(
-    #     {
-    #         "rollout_fragment_length": 1000,
-    #         "train_batch_size": 4000,
-    #         "model": {"use_lstm": True},
-    #     }
-    # )
+    config.update_from_dict(
+        {
+            "model": {"use_lstm": True},
+        }
+    )
 
     algo = config.build()
     while True:

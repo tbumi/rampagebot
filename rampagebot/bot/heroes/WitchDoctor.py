@@ -60,6 +60,10 @@ class WitchDoctor(Hero):
                 "magic_stick",
                 "recipe_magic_wand",
             ],
+            ability_1="witch_doctor_paralyzing_cask",
+            ability_2="witch_doctor_voodoo_restoration",
+            ability_3="witch_doctor_maledict",
+            ability_4="witch_doctor_death_ward",
         )
 
     def fight(self, world: World) -> Command | None:
