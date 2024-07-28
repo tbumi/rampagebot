@@ -1,3 +1,4 @@
+import numpy as np
 import ray
 from gymnasium.spaces import Box, Discrete
 from ray.rllib.algorithms.ppo import PPOConfig
@@ -14,9 +15,19 @@ SERVER_PORT = 9090
 def main():
     ray.init()
 
-    observation_space = Box(
-        float("-inf"), float("inf"), (len(Observation.model_fields),)
-    )
+    low = []
+    high = []
+    for field_info in Observation.model_fields.values():
+        low_constraint = float("-inf")
+        high_constraint = float("inf")
+        for constraint in field_info.metadata:
+            if hasattr(constraint, "ge"):
+                low_constraint = float(constraint.ge)
+            elif hasattr(constraint, "le"):
+                high_constraint = float(constraint.le)
+        low.append(low_constraint)
+        high.append(high_constraint)
+    observation_space = Box(np.array(low), np.array(high))
     action_space = Discrete(len(GymAction))
 
     config = (

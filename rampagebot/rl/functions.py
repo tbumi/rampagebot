@@ -13,15 +13,16 @@ from rampagebot.bot.utils import (
 from rampagebot.models.dota.BaseEntity import Vector
 from rampagebot.models.GameUpdate import GameUpdate
 from rampagebot.models.TeamName import TeamName, enemy_team
-from rampagebot.rl.models import Observation
+from rampagebot.rl.models import (
+    LANE_CREEP_SPAWN_INTERVAL_SECS,
+    NEUTRAL_CREEP_SPAWN_INTERVAL_SECS,
+    Observation,
+)
 
 # agent name format: "teamname_i"
 # teamname: radiant/dire
 # i: player_id 1-5 for each team
 # example: radiant_1, dire_4
-
-LANE_CREEP_SPAWN_INTERVAL_SECS = 30
-NEUTRAL_CREEP_SPAWN_INTERVAL_SECS = 60
 
 
 def which_lane(hero_pos: Vector) -> float:
