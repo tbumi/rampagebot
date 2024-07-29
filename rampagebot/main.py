@@ -25,7 +25,11 @@ from rampagebot.models.GameUpdate import GameUpdate
 from rampagebot.models.Settings import Settings
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
-from rampagebot.rl.functions import calculate_rewards, generate_rl_observations
+from rampagebot.rl.functions import (
+    assign_rewards,
+    generate_rl_observations,
+    store_rewards,
+)
 
 NUMBER_OF_GAMES = 1
 
@@ -133,17 +137,19 @@ async def game_update_endpoint(
             f.write(await req.body())
 
     for team in TeamName:
-        app.state.bots[team].world = World(
-            entities=getattr(game_update, f"{team.value}_entities")
-        )
-        for hero in app.state.bots[team].heroes:
-            hero.info = app.state.bots[team].world.find_player_hero_entity(hero.name)
+        bot: SmartBot = app.state.bots[team]
+        bot.world = World(entities=getattr(game_update, f"{team.value}_entities"))
+        for hero in bot.heroes:
+            hero.info = bot.world.find_player_hero_entity(hero.name)
+
+    store_rewards(game_update.statistics, app.state.bots)
 
     if game_update.update_count % 3 == 0:
         # don't update rewards on the very first game step
         # as there haven't been any actions
         if game_update.update_count > 0:
-            rewards = calculate_rewards(game_update, app.state.bots)
+            rewards = assign_rewards(app.state.bots)
+            print(f"{rewards=}")
             app.state.rl_client.log_returns(app.state.episode_id, rewards)
 
         observations = generate_rl_observations(game_update, app.state.bots)

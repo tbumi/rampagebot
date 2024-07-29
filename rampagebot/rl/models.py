@@ -1,4 +1,5 @@
-from enum import Enum
+from dataclasses import dataclass, field
+from enum import Enum, auto
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -57,25 +58,59 @@ class Observation(BaseModel):
     pct_health_of_enemy_hero_3: float = Field(ge=-1, le=1)
     pct_health_of_enemy_hero_4: float = Field(ge=-1, le=1)
     pct_health_of_enemy_hero_5: float = Field(ge=-1, le=1)
-    distance_to_enemy_tower_t1top: float = Field(ge=-1)
-    distance_to_enemy_tower_t1mid: float = Field(ge=-1)
-    distance_to_enemy_tower_t1bot: float = Field(ge=-1)
-    distance_to_enemy_tower_t2top: float = Field(ge=-1)
-    distance_to_enemy_tower_t2mid: float = Field(ge=-1)
-    distance_to_enemy_tower_t2bot: float = Field(ge=-1)
-    distance_to_enemy_tower_t3top: float = Field(ge=-1)
-    distance_to_enemy_tower_t3mid: float = Field(ge=-1)
-    distance_to_enemy_tower_t3bot: float = Field(ge=-1)
-    distance_to_enemy_tower_t4top: float = Field(ge=-1)
-    distance_to_enemy_tower_t4bot: float = Field(ge=-1)
-    pct_health_of_enemy_tower_t1top: float = Field(ge=-1, le=1)
-    pct_health_of_enemy_tower_t1mid: float = Field(ge=-1, le=1)
-    pct_health_of_enemy_tower_t1bot: float = Field(ge=-1, le=1)
-    pct_health_of_enemy_tower_t2top: float = Field(ge=-1, le=1)
-    pct_health_of_enemy_tower_t2mid: float = Field(ge=-1, le=1)
-    pct_health_of_enemy_tower_t2bot: float = Field(ge=-1, le=1)
-    pct_health_of_enemy_tower_t3top: float = Field(ge=-1, le=1)
-    pct_health_of_enemy_tower_t3mid: float = Field(ge=-1, le=1)
-    pct_health_of_enemy_tower_t3bot: float = Field(ge=-1, le=1)
-    pct_health_of_enemy_tower_t4top: float = Field(ge=-1, le=1)
-    pct_health_of_enemy_tower_t4bot: float = Field(ge=-1, le=1)
+    distance_to_enemy_tower_t1_top: float = Field(ge=-1)
+    distance_to_enemy_tower_t1_mid: float = Field(ge=-1)
+    distance_to_enemy_tower_t1_bot: float = Field(ge=-1)
+    distance_to_enemy_tower_t2_top: float = Field(ge=-1)
+    distance_to_enemy_tower_t2_mid: float = Field(ge=-1)
+    distance_to_enemy_tower_t2_bot: float = Field(ge=-1)
+    distance_to_enemy_tower_t3_top: float = Field(ge=-1)
+    distance_to_enemy_tower_t3_mid: float = Field(ge=-1)
+    distance_to_enemy_tower_t3_bot: float = Field(ge=-1)
+    distance_to_enemy_tower_t4_top: float = Field(ge=-1)
+    distance_to_enemy_tower_t4_bot: float = Field(ge=-1)
+    pct_health_of_enemy_tower_t1_top: float = Field(ge=-1, le=1)
+    pct_health_of_enemy_tower_t1_mid: float = Field(ge=-1, le=1)
+    pct_health_of_enemy_tower_t1_bot: float = Field(ge=-1, le=1)
+    pct_health_of_enemy_tower_t2_top: float = Field(ge=-1, le=1)
+    pct_health_of_enemy_tower_t2_mid: float = Field(ge=-1, le=1)
+    pct_health_of_enemy_tower_t2_bot: float = Field(ge=-1, le=1)
+    pct_health_of_enemy_tower_t3_top: float = Field(ge=-1, le=1)
+    pct_health_of_enemy_tower_t3_mid: float = Field(ge=-1, le=1)
+    pct_health_of_enemy_tower_t3_bot: float = Field(ge=-1, le=1)
+    pct_health_of_enemy_tower_t4_top: float = Field(ge=-1, le=1)
+    pct_health_of_enemy_tower_t4_bot: float = Field(ge=-1, le=1)
+
+
+class TowerEnum(Enum):
+    T1_TOP = auto()
+    T1_MID = auto()
+    T1_BOT = auto()
+    T2_TOP = auto()
+    T2_MID = auto()
+    T2_BOT = auto()
+    T3_TOP = auto()
+    T3_MID = auto()
+    T3_BOT = auto()
+    T4_TOP = auto()
+    T4_BOT = auto()
+
+
+class BarracksEnum(Enum):
+    MELEE_TOP = auto()
+    MELEE_MID = auto()
+    MELEE_BOT = auto()
+    RANGE_TOP = auto()
+    RANGE_MID = auto()
+    RANGE_BOT = auto()
+
+
+@dataclass
+class Rewards:
+    kills: int = 0
+    deaths: int = 0
+    assists: int = 0
+    last_hits: int = 0
+    denies: int = 0
+    team_tower_kills: set[TowerEnum] = field(default_factory=set)
+    team_barracks_kills: set[BarracksEnum] = field(default_factory=set)

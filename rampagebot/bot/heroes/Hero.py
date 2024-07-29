@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from rampagebot.bot.enums import LaneOptions, RoleOptions
 from rampagebot.bot.utils import SECRET_SHOP_ITEMS
@@ -7,6 +7,7 @@ from rampagebot.models.dota.Ability import Ability
 from rampagebot.models.dota.EntityCourier import EntityCourier
 from rampagebot.models.dota.EntityPlayerHero import EntityPlayerHero
 from rampagebot.models.World import World
+from rampagebot.rl.models import Rewards
 
 
 @dataclass
@@ -29,6 +30,10 @@ class Hero:
     courier_transferring_items: bool = False
 
     info: EntityPlayerHero | None = None
+
+    # these vars are for calculating RL rewards
+    unrewarded: Rewards = field(default_factory=Rewards)
+    rewarded: Rewards = field(default_factory=Rewards)
 
     def fight(self, world: World) -> Command | None:
         raise NotImplementedError("Should be overridden in child classes")

@@ -1,3 +1,5 @@
+from dataclasses import fields
+
 import numpy as np
 
 from rampagebot.bot.SmartBot import SmartBot
@@ -16,7 +18,9 @@ from rampagebot.models.TeamName import TeamName, enemy_team
 from rampagebot.rl.models import (
     LANE_CREEP_SPAWN_INTERVAL_SECS,
     NEUTRAL_CREEP_SPAWN_INTERVAL_SECS,
+    BarracksEnum,
     Observation,
+    TowerEnum,
 )
 
 # agent name format: "teamname_i"
@@ -71,6 +75,7 @@ def generate_rl_observations(
         # whether a hero or tower is dead or not
         enemy_world = bots[enemy_team(team)].world
         assert enemy_world is not None
+        enemy_g_or_b = TeamName_to_goodbad(enemy_team(team))
 
         for i, hero in enumerate(bots[team].heroes):
             if hero.info is None:
@@ -137,43 +142,36 @@ def generate_rl_observations(
                         enemy.health / enemy.max_health
                     )
 
-            for tier in range(1, 5):
-                for lane in ("top", "mid", "bot"):
-                    if tier == 4 and lane == "mid":
-                        # tier 4 has only 2 towers
-                        continue
-                    g_or_b = TeamName_to_goodbad(enemy_team(team))
-                    _, tower = world.find_tower_entity(
-                        f"dota_{g_or_b}guys_tower{tier}_{lane}"
-                    )
-                    _, tower_from_enemy_perspective = enemy_world.find_tower_entity(
-                        f"dota_{g_or_b}guys_tower{tier}_{lane}"
-                    )
-                    if tower is None:
-                        if tower_from_enemy_perspective is None:
-                            # tower is dead
-                            # TODO: test by destroying tower
-                            ob[f"distance_to_enemy_tower_t{tier}{lane}"] = -1.0
-                            ob[f"pct_health_of_enemy_tower_t{tier}{lane}"] = -1.0
-                        else:
-                            # tower is hidden in fog of war
-                            ob[f"distance_to_enemy_tower_t{tier}{lane}"] = (
-                                distance_between(
-                                    hero.info.origin,
-                                    # not cheating as tower doesn't move at all
-                                    tower_from_enemy_perspective.origin,
-                                )
-                            )
-                            # TODO: can we see the health of a tower in FOW? verify
-                            ob[f"pct_health_of_enemy_tower_t{tier}{lane}"] = 0.0
+            for tower_enum in TowerEnum:
+                tower_name = tower_enum.name[1:].lower()
+                _, tower = world.find_tower_entity(
+                    f"dota_{enemy_g_or_b}guys_tower{tower_name}"
+                )
+                _, tower_from_enemy_perspective = enemy_world.find_tower_entity(
+                    f"dota_{enemy_g_or_b}guys_tower{tower_name}"
+                )
+                if tower is None:
+                    if tower_from_enemy_perspective is None:
+                        # tower is dead
+                        ob[f"distance_to_enemy_tower_t{tower_name}"] = -1.0
+                        ob[f"pct_health_of_enemy_tower_t{tower_name}"] = -1.0
                     else:
-                        # tower is alive and visible
-                        ob[f"distance_to_enemy_tower_t{tier}{lane}"] = distance_between(
-                            hero.info.origin, tower.origin
+                        # tower is hidden in fog of war
+                        ob[f"distance_to_enemy_tower_t{tower_name}"] = distance_between(
+                            hero.info.origin,
+                            # not cheating as tower doesn't move at all
+                            tower_from_enemy_perspective.origin,
                         )
-                        ob[f"pct_health_of_enemy_tower_t{tier}{lane}"] = (
-                            tower.health / tower.max_health
-                        )
+                        # TODO: can we see the health of a tower in FOW? verify
+                        ob[f"pct_health_of_enemy_tower_t{tower_name}"] = 0.0
+                else:
+                    # tower is alive and visible
+                    ob[f"distance_to_enemy_tower_t{tower_name}"] = distance_between(
+                        hero.info.origin, tower.origin
+                    )
+                    ob[f"pct_health_of_enemy_tower_t{tower_name}"] = (
+                        tower.health / tower.max_health
+                    )
 
             all_observations[f"{team.value}_{i+1}"] = np.array(
                 [v for v in Observation(**ob).model_dump().values()]
@@ -181,29 +179,123 @@ def generate_rl_observations(
     return all_observations
 
 
-def calculate_rewards(
-    game_update: GameUpdate, bots: dict[TeamName, SmartBot]
-) -> dict[str, float]:
-    rewards = {}
+def store_rewards(
+    statistics: dict[str, float | int | str], bots: dict[TeamName, SmartBot]
+) -> None:
+    stat_idx = {}
+    for i in range(10):
+        stat_idx[statistics[f"{i}_name"]] = i
+
+    for team in TeamName:
+        world = bots[team].world
+        assert world is not None
+
+        # enemy_world is only used for checking hero and tower
+        # are they dead or just in fog of war
+        # this is not cheating because in the actual dota interface we can see
+        # whether a hero or tower is dead or not
+        enemy_world = bots[enemy_team(team)].world
+        assert enemy_world is not None
+        enemy_g_or_b = TeamName_to_goodbad(enemy_team(team))
+
+        for hero in bots[team].heroes:
+            for stat in fields(hero.unrewarded):
+                if stat.name == "team_tower_kills":
+                    for tower in TowerEnum:
+                        if tower in hero.rewarded.team_tower_kills:
+                            continue
+                        if tower in hero.unrewarded.team_tower_kills:
+                            continue
+                        _, tower_from_self_world = world.find_tower_entity(
+                            f"dota_{enemy_g_or_b}guys_tower{tower.name[1:].lower()}"
+                        )
+                        _, tower_from_enemy_world = enemy_world.find_tower_entity(
+                            f"dota_{enemy_g_or_b}guys_tower{tower.name[1:].lower()}"
+                        )
+                        if (
+                            tower_from_self_world is None
+                            and tower_from_enemy_world is None
+                        ):
+                            print(f"{tower.name} TOWER KILL NEW REWARD!!!")
+                            hero.unrewarded.team_tower_kills.add(tower)
+                    continue
+                if stat.name == "team_barracks_kills":
+                    for barracks in BarracksEnum:
+                        if barracks in hero.rewarded.team_barracks_kills:
+                            continue
+                        if barracks in hero.unrewarded.team_barracks_kills:
+                            continue
+                        rax_from_self_world = world.find_building_entity(
+                            f"{enemy_g_or_b}_rax_{barracks.name.lower()}"
+                        )
+                        rax_from_enemy_world = enemy_world.find_building_entity(
+                            f"{enemy_g_or_b}_rax_{barracks.name.lower()}"
+                        )
+                        if rax_from_self_world is None and rax_from_enemy_world is None:
+                            print(f"{barracks.name} RAX KILL NEW REWARD!!!")
+                            hero.unrewarded.team_barracks_kills.add(barracks)
+                    continue
+                player_idx = stat_idx[hero.name]
+                current_value = int(statistics[f"{player_idx}_{stat.name}"])
+                unrewarded_value = getattr(hero.unrewarded, stat.name)
+                rewarded_value = getattr(hero.rewarded, stat.name)
+                if current_value > unrewarded_value + rewarded_value:
+                    print(
+                        "new reward!",
+                        stat.name,
+                        current_value,
+                        unrewarded_value,
+                        rewarded_value,
+                    )
+                    setattr(
+                        hero.unrewarded,
+                        stat.name,
+                        current_value - rewarded_value,
+                    )
+
+
+def assign_rewards(bots: dict[TeamName, SmartBot]) -> dict[str, float]:
+    all_rewards = {}
     for team in TeamName:
         for i, hero in enumerate(bots[team].heroes):
-            new_kills = 0
-            new_deaths = 0
-            new_assists = 0
-            new_gold = 0
-            new_xp = 0
-            new_tower_kills = 0
-            new_barracks_kills = 0
-            # ancient_kill = 0 # TODO
-            rewards[f"{team.value}_{i+1}"] = sum(
+            rew: dict[str, int] = {}
+            for stat in fields(hero.unrewarded):
+                if stat.name == "team_tower_kills":
+                    rew["team_tower_kills"] = len(hero.unrewarded.team_tower_kills)
+                    hero.rewarded.team_tower_kills |= hero.unrewarded.team_tower_kills
+                    hero.unrewarded.team_tower_kills.clear()
+                    continue
+                if stat.name == "team_barracks_kills":
+                    rew["team_barracks_kills"] = len(
+                        hero.unrewarded.team_barracks_kills
+                    )
+                    hero.rewarded.team_barracks_kills |= (
+                        hero.unrewarded.team_barracks_kills
+                    )
+                    hero.unrewarded.team_barracks_kills.clear()
+                    continue
+                stat_val = getattr(hero.unrewarded, stat.name)
+                if stat_val > 0:
+                    rew[stat.name] = stat_val
+                    setattr(hero.unrewarded, stat.name, 0)
+                    setattr(
+                        hero.rewarded,
+                        stat.name,
+                        getattr(hero.rewarded, stat.name) + stat_val,
+                    )
+                else:
+                    rew[stat.name] = 0
+
+            # TODO: count ancient kill? or ancient HP change
+            all_rewards[f"{team.value}_{i+1}"] = sum(
                 [
-                    1 * new_kills,
-                    -1 * new_deaths,
-                    0.5 * new_assists,
-                    0.01 * new_gold,
-                    0.01 * new_xp,
-                    5 * new_tower_kills,
-                    5 * new_barracks_kills,
+                    1 * rew["kills"],
+                    -1 * rew["deaths"],
+                    0.5 * rew["assists"],
+                    0.01 * rew["last_hits"],
+                    0.01 * rew["denies"],
+                    5 * rew["team_tower_kills"],
+                    5 * rew["team_barracks_kills"],
                 ]
             )
-    return rewards
+    return all_rewards
