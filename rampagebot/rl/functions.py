@@ -64,6 +64,14 @@ def generate_rl_observations(
     for team in TeamName:
         world = bots[team].world
         assert world is not None
+
+        # enemy_world is only used for checking hero and tower
+        # are they dead or just in fog of war
+        # this is not cheating because in the actual dota interface we can see
+        # whether a hero or tower is dead or not
+        enemy_world = bots[enemy_team(team)].world
+        assert enemy_world is not None
+
         for i, hero in enumerate(bots[team].heroes):
             if hero.info is None:
                 # hero is dead, don't include in observation dicts
@@ -98,7 +106,7 @@ def generate_rl_observations(
                 ob[f"distance_to_ally_hero_{j+1}"] = (
                     distance_between(hero.info.origin, ally.info.origin)
                     if ally.info is not None
-                    else -1
+                    else -1.0
                 )
                 ob[f"pct_health_of_ally_hero_{j+1}"] = (
                     (ally.info.health / ally.info.max_health)
@@ -109,14 +117,25 @@ def generate_rl_observations(
             enemy_names = [h.name for h in bots[enemy_team(team)].heroes]
             for j, enemy_name in enumerate(enemy_names):
                 enemy = world.find_enemy_hero_entity(enemy_name)
-                ob[f"distance_to_enemy_hero_{j+1}"] = (
-                    distance_between(hero.info.origin, enemy.origin)
-                    if enemy is not None
-                    else -1
+                enemy_from_enemy_perspective = enemy_world.find_player_hero_entity(
+                    enemy_name
                 )
-                ob[f"pct_health_of_enemy_hero_{j+1}"] = (
-                    (enemy.health / enemy.max_health) if enemy is not None else 0.0
-                )
+                if enemy is None:
+                    ob[f"distance_to_enemy_hero_{j+1}"] = -1.0
+                    if enemy_from_enemy_perspective is None:
+                        # enemy is dead
+                        ob[f"pct_health_of_enemy_hero_{j+1}"] = -1.0
+                    else:
+                        # enemy is hidden in fog of war
+                        ob[f"pct_health_of_enemy_hero_{j+1}"] = 0.0
+                else:
+                    # enemy is alive and visible
+                    ob[f"distance_to_enemy_hero_{j+1}"] = distance_between(
+                        hero.info.origin, enemy.origin
+                    )
+                    ob[f"pct_health_of_enemy_hero_{j+1}"] = (
+                        enemy.health / enemy.max_health
+                    )
 
             for tier in range(1, 5):
                 for lane in ("top", "mid", "bot"):
@@ -127,15 +146,34 @@ def generate_rl_observations(
                     _, tower = world.find_tower_entity(
                         f"dota_{g_or_b}guys_tower{tier}_{lane}"
                     )
-                    # TODO: differentiate between tower unseen and tower dead
-                    ob[f"distance_to_enemy_tower_t{tier}{lane}"] = (
-                        distance_between(hero.info.origin, tower.origin)
-                        if tower is not None
-                        else -1
+                    _, tower_from_enemy_perspective = enemy_world.find_tower_entity(
+                        f"dota_{g_or_b}guys_tower{tier}_{lane}"
                     )
-                    ob[f"pct_health_of_enemy_tower_t{tier}{lane}"] = (
-                        (tower.health / tower.max_health) if tower is not None else 0.0
-                    )
+                    if tower is None:
+                        if tower_from_enemy_perspective is None:
+                            # tower is dead
+                            # TODO: test by destroying tower
+                            ob[f"distance_to_enemy_tower_t{tier}{lane}"] = -1.0
+                            ob[f"pct_health_of_enemy_tower_t{tier}{lane}"] = -1.0
+                        else:
+                            # tower is hidden in fog of war
+                            ob[f"distance_to_enemy_tower_t{tier}{lane}"] = (
+                                distance_between(
+                                    hero.info.origin,
+                                    # not cheating as tower doesn't move at all
+                                    tower_from_enemy_perspective.origin,
+                                )
+                            )
+                            # TODO: can we see the health of a tower in FOW? verify
+                            ob[f"pct_health_of_enemy_tower_t{tier}{lane}"] = 0.0
+                    else:
+                        # tower is alive and visible
+                        ob[f"distance_to_enemy_tower_t{tier}{lane}"] = distance_between(
+                            hero.info.origin, tower.origin
+                        )
+                        ob[f"pct_health_of_enemy_tower_t{tier}{lane}"] = (
+                            tower.health / tower.max_health
+                        )
 
             all_observations[f"{team.value}_{i+1}"] = np.array(
                 [v for v in Observation(**ob).model_dump().values()]
