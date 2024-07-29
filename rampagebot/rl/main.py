@@ -5,6 +5,7 @@ from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.env.policy_server_input import PolicyServerInput
 from ray.rllib.examples._old_api_stack.policy.random_policy import RandomPolicy
 from ray.rllib.policy.policy import PolicySpec
+from ray.tune.logger import pretty_print
 
 from rampagebot.rl.models import GymAction, Observation
 
@@ -67,6 +68,7 @@ def main():
             ),
             policies_to_train=["main"],
         )
+        .debugging(log_level="INFO")
     )
     config.update_from_dict(
         {
@@ -77,7 +79,10 @@ def main():
     algo = config.build()
     while True:
         try:
-            print(algo.train())
+            result = algo.train()
+            print(pretty_print(result))
+            checkpoint_dir = algo.save().checkpoint.path
+            print(f"Checkpoint saved in directory {checkpoint_dir}")
         except KeyboardInterrupt:
             break
 
