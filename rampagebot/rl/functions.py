@@ -285,10 +285,10 @@ def assign_rewards(bots: dict[TeamName, SmartBot]) -> dict[str, float]:
                     1 * rew["kills"],
                     -1 * rew["deaths"],
                     0.5 * rew["assists"],
-                    0.01 * rew["last_hits"],
-                    0.01 * rew["denies"],
-                    5 * rew["team_tower_kills"],
-                    5 * rew["team_barracks_kills"],
+                    0.2 * rew["last_hits"],
+                    0.2 * rew["denies"],
+                    3 * rew["team_tower_kills"],
+                    4 * rew["team_barracks_kills"],
                 ]
             )
     return all_rewards
