@@ -37,7 +37,8 @@ class Observation(BaseModel):
     cooldown_ability_2: float = Field(ge=0)
     cooldown_ability_3: float = Field(ge=0)
     cooldown_ability_4: float = Field(ge=0)
-    current_lane: float = Field(ge=0, le=3)  # 0=dead, 1=top, 2=mid, 3=bot
+    current_lane: float = Field(ge=1, le=3)  # 1=top, 2=mid, 3=bot
+    in_assigned_lane: float = Field(ge=0, le=1)
 
     distance_to_ally_hero_1: float = Field(ge=-1)
     distance_to_ally_hero_2: float = Field(ge=-1)

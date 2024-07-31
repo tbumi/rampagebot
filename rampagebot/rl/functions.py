@@ -3,6 +3,7 @@ from dataclasses import fields
 import numpy as np
 
 from rampagebot.bot.constants import BOT_LEFT, MID_LEFT, MID_RIGHT, TOP_RIGHT
+from rampagebot.bot.enums import LaneOptions
 from rampagebot.bot.SmartBot import SmartBot
 from rampagebot.bot.utils import TeamName_to_goodbad, distance_between, is_left_of_line
 from rampagebot.models.dota.BaseEntity import Vector
@@ -22,20 +23,18 @@ from rampagebot.rl.models import (
 # example: radiant_1, dire_4
 
 
-def which_lane(hero_pos: Vector) -> float:
+def which_lane(hero_pos: Vector) -> LaneOptions:
     if is_left_of_line(BOT_LEFT, MID_LEFT, hero_pos) or is_left_of_line(
         MID_LEFT, TOP_RIGHT, hero_pos
     ):
-        # top
-        return 1.0
+        return LaneOptions.top
+
     if not is_left_of_line(BOT_LEFT, MID_RIGHT, hero_pos) or not is_left_of_line(
         MID_RIGHT, TOP_RIGHT, hero_pos
     ):
-        # bot
-        return 3.0
+        return LaneOptions.bottom
 
-    # mid
-    return 2.0
+    return LaneOptions.middle
 
 
 def time_to_next_sunrise_sunset(time_of_day: float) -> float:
@@ -76,6 +75,7 @@ def generate_rl_observations(
                 # since we don't need an action for those dead heroes
                 continue
 
+            current_lane = which_lane(hero.info.origin)
             ob: dict[str, float] = {
                 "game_time": game_update.game_time,
                 "is_day": game_update.is_day,
@@ -90,7 +90,12 @@ def generate_rl_observations(
                 "xp": hero.info.xp,
                 "pct_health": hero.info.health / hero.info.max_health,
                 "pct_mana": hero.info.mana / hero.info.max_mana,
-                "current_lane": which_lane(hero.info.origin),
+                "current_lane": (
+                    1.0
+                    if current_lane == LaneOptions.top
+                    else 2.0 if current_lane == LaneOptions.middle else 3.0
+                ),
+                "in_assigned_lane": current_lane == hero.lane,
             }
 
             for j in range(1, 5):
