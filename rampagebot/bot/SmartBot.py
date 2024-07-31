@@ -1,16 +1,16 @@
 import json
 from typing import cast
 
+from rampagebot.bot.constants import BOT_LEFT, TOP_RIGHT
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import (
-    BOT_LEFT,
-    TOP_RIGHT,
     TeamName_to_goodbad,
     distance_between,
     effective_damage,
+    find_closest_tower,
     find_enemy_creeps_in_lane,
     find_nearest_enemy_creeps,
-    find_outermost_tower,
+    find_next_push_target,
     point_at_distance,
 )
 from rampagebot.models.Commands import (
@@ -57,16 +57,14 @@ class SmartBot:
                 commands.append({hero.name: MoveCommand.to(base)})
                 continue
 
-            if hero.info.has_tower_aggro or hero.info.has_aggro:
-                tower = find_outermost_tower(self.team, self.world, hero.lane)
-                entity: BaseEntity | None = tower[1]
-                if entity is None:
-                    team = TeamName_to_goodbad(self.team)
-                    entity = self.world.find_building_entity(
-                        f"ent_dota_fountain_{team}"
-                    )
-                    assert entity is not None
-                commands.append({hero.name: MoveCommand.to(entity.origin)})
+            if hero.info.has_aggro:
+                hero.has_had_aggro_for_ticks += 1
+            else:
+                hero.has_had_aggro_for_ticks = 0
+
+            if hero.info.has_tower_aggro or hero.has_had_aggro_for_ticks > 3:
+                retreat_command = self.retreat(hero)
+                commands.append({hero.name: retreat_command})
                 continue
 
             if len(hero.ability_build) > 0 and hero.info.ability_points > 0:
@@ -153,10 +151,12 @@ class SmartBot:
             else:
                 return AttackCommand(target=creep_id)
 
-        tower_id, _ = find_outermost_tower(enemy_team(self.team), self.world, hero.lane)
-        if tower_id is None:
+        building_id = find_next_push_target(
+            enemy_team(self.team), self.world, hero.lane
+        )
+        if building_id is None:
             return None
-        return AttackCommand(target=tower_id)
+        return AttackCommand(target=building_id)
 
     def farm(self, hero: Hero) -> Command | None:
         assert self.world is not None
@@ -203,8 +203,13 @@ class SmartBot:
 
         return MoveCommand.to(attack_range_distance)
 
-    def retreat(self, hero: Hero) -> Command | None:
+    def retreat(self, hero: Hero) -> Command:
         assert self.world is not None
         assert hero.info is not None
-        # TODO
-        return None
+        tower = find_closest_tower(self.team, self.world, hero)
+        retreat_dest: BaseEntity | None = tower[1]
+        if retreat_dest is None:
+            team = TeamName_to_goodbad(self.team)
+            retreat_dest = self.world.find_building_entity(f"ent_dota_fountain_{team}")
+            assert retreat_dest is not None
+        return MoveCommand.to(retreat_dest.origin)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
+from rampagebot.bot.constants import SECRET_SHOP_ITEMS
 from rampagebot.bot.enums import LaneOptions, RoleOptions
-from rampagebot.bot.utils import SECRET_SHOP_ITEMS
 from rampagebot.models.Commands import Command
 from rampagebot.models.dota.Ability import Ability
 from rampagebot.models.dota.EntityCourier import EntityCourier
@@ -30,6 +30,8 @@ class Hero:
     courier_transferring_items: bool = False
 
     info: EntityPlayerHero | None = None
+
+    has_had_aggro_for_ticks: int = 0
 
     # these vars are for calculating RL rewards
     unrewarded: Rewards = field(default_factory=Rewards)

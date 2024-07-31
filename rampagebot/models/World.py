@@ -37,3 +37,9 @@ class World(BaseModel):
             if isinstance(e, EntityBuilding) and e.name == name:
                 return e
         return None
+
+    def find_building_id(self, name: str) -> str | None:
+        for id_, e in self.entities.items():
+            if isinstance(e, EntityBuilding) and e.name == name:
+                return id_
+        return None

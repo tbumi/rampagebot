@@ -2,16 +2,9 @@ from dataclasses import fields
 
 import numpy as np
 
+from rampagebot.bot.constants import BOT_LEFT, MID_LEFT, MID_RIGHT, TOP_RIGHT
 from rampagebot.bot.SmartBot import SmartBot
-from rampagebot.bot.utils import (
-    BOT_LEFT,
-    MID_LEFT,
-    MID_RIGHT,
-    TOP_RIGHT,
-    TeamName_to_goodbad,
-    distance_between,
-    is_left_of_line,
-)
+from rampagebot.bot.utils import TeamName_to_goodbad, distance_between, is_left_of_line
 from rampagebot.models.dota.BaseEntity import Vector
 from rampagebot.models.GameUpdate import GameUpdate
 from rampagebot.models.TeamName import TeamName, enemy_team

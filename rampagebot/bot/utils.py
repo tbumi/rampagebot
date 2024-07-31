@@ -1,6 +1,8 @@
 import math
 
+from rampagebot.bot.constants import BOT_LEFT, MID_LEFT, MID_RIGHT, TOP_RIGHT
 from rampagebot.bot.enums import LaneOptions
+from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.models.dota.BaseEntity import Vector
 from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
 from rampagebot.models.dota.EntityHero import EntityHero
@@ -8,29 +10,6 @@ from rampagebot.models.dota.EntityTower import EntityTower
 from rampagebot.models.dota.enums.DOTATeam import DOTATeam
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
-
-TOP_RIGHT = (7500, 7000, 400)
-MID_RIGHT = (2500, -2000, 400)
-MID_LEFT = (-2500, 2000, 400)
-BOT_LEFT = (-7500, -7000, 400)
-
-SECRET_SHOP_ITEMS = (
-    "cornucopia",
-    "demon_edge",
-    "eagle",
-    "energy_booster",
-    "hyperstone",
-    "mystic_staff",
-    "platemail",
-    "point_booster",
-    "reaver",
-    "relic",
-    "ring_of_tarrasque",
-    "talisman_of_evasion",
-    "tiara_of_selemene",
-    "ultimate_orb",
-    "vitality_booster",
-)
 
 
 def TeamName_to_DOTATeam(team: TeamName) -> DOTATeam:
@@ -152,14 +131,46 @@ def effective_damage(damage: float, armor: float) -> float:
     return damage * mult
 
 
-def find_outermost_tower(
+def find_next_push_target(
     team_name: TeamName, world: World, lane: LaneOptions
-) -> tuple[None, None] | tuple[str, EntityTower]:
+) -> None | str:
     team = TeamName_to_goodbad(team_name)
-    tier = 1
-    while tier < 5:
+    for tier in range(1, 4):
         tower = world.find_tower_entity(f"dota_{team}guys_tower{tier}_{lane.value}")
-        if tower is not None:
-            return tower
-        tier += 1
+        if tower[0] is not None:
+            return tower[0]
+    melee_rax = world.find_building_id(f"{team}_rax_melee_{lane.value}")
+    if melee_rax is not None:
+        return melee_rax
+    range_rax = world.find_building_id(f"{team}_rax_range_{lane.value}")
+    if range_rax is not None:
+        return range_rax
+    t4_top_tower = world.find_tower_entity(f"dota_{team}guys_tower4_top")
+    if t4_top_tower[0] is not None:
+        return t4_top_tower[0]
+    t4_bot_tower = world.find_tower_entity(f"dota_{team}guys_tower4_bot")
+    if t4_bot_tower[0] is not None:
+        return t4_bot_tower[0]
+    ancient = world.find_building_id(f"dota_{team}guys_fort")
+    if ancient is not None:
+        return ancient
+    return None
+
+
+def find_closest_tower(
+    team_name: TeamName, world: World, hero: Hero
+) -> tuple[None, None] | tuple[str, EntityTower]:
+    assert hero.info is not None
+    team = TeamName_to_goodbad(team_name)
+    distances = []
+    for lane in LaneOptions:
+        for tier in range(1, 5):
+            tower = world.find_tower_entity(f"dota_{team}guys_tower{tier}_{lane.value}")
+            if tower[0] is not None:
+                distances.append(
+                    (tower, distance_between(hero.info.origin, tower[1].origin))
+                )
+    if distances:
+        distances.sort(key=lambda x: x[1])
+        return distances[0][0]
     return None, None
