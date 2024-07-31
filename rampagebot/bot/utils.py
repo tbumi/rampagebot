@@ -136,21 +136,21 @@ def find_next_push_target(
 ) -> None | str:
     team = TeamName_to_goodbad(team_name)
     for tier in range(1, 4):
-        tower = world.find_tower_entity(f"dota_{team}guys_tower{tier}_{lane.value}")
-        if tower[0] is not None:
-            return tower[0]
+        tower = world.find_tower_id(f"dota_{team}guys_tower{tier}_{lane.value}")
+        if tower is not None:
+            return tower
     melee_rax = world.find_building_id(f"{team}_rax_melee_{lane.value}")
     if melee_rax is not None:
         return melee_rax
     range_rax = world.find_building_id(f"{team}_rax_range_{lane.value}")
     if range_rax is not None:
         return range_rax
-    t4_top_tower = world.find_tower_entity(f"dota_{team}guys_tower4_top")
-    if t4_top_tower[0] is not None:
-        return t4_top_tower[0]
-    t4_bot_tower = world.find_tower_entity(f"dota_{team}guys_tower4_bot")
-    if t4_bot_tower[0] is not None:
-        return t4_bot_tower[0]
+    t4_top_tower = world.find_tower_id(f"dota_{team}guys_tower4_top")
+    if t4_top_tower is not None:
+        return t4_top_tower
+    t4_bot_tower = world.find_tower_id(f"dota_{team}guys_tower4_bot")
+    if t4_bot_tower is not None:
+        return t4_bot_tower
     ancient = world.find_building_id(f"dota_{team}guys_fort")
     if ancient is not None:
         return ancient
@@ -159,18 +159,18 @@ def find_next_push_target(
 
 def find_closest_tower(
     team_name: TeamName, world: World, hero: Hero
-) -> tuple[None, None] | tuple[str, EntityTower]:
+) -> EntityTower | None:
     assert hero.info is not None
     team = TeamName_to_goodbad(team_name)
-    distances = []
+    distances: list[tuple[EntityTower, float]] = []
     for lane in LaneOptions:
         for tier in range(1, 5):
             tower = world.find_tower_entity(f"dota_{team}guys_tower{tier}_{lane.value}")
-            if tower[0] is not None:
+            if tower is not None:
                 distances.append(
-                    (tower, distance_between(hero.info.origin, tower[1].origin))
+                    (tower, distance_between(hero.info.origin, tower.origin))
                 )
     if distances:
         distances.sort(key=lambda x: x[1])
         return distances[0][0]
-    return None, None
+    return None

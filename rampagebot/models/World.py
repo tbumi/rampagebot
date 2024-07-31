@@ -24,17 +24,15 @@ class World(BaseModel):
                 return e
         return None
 
-    def find_tower_entity(
-        self, name: str
-    ) -> tuple[None, None] | tuple[str, EntityTower]:
+    def find_tower_id(self, name: str) -> str | None:
         for id_, e in self.entities.items():
             if isinstance(e, EntityTower) and e.name == name:
-                return id_, e
-        return None, None
+                return id_
+        return None
 
-    def find_building_entity(self, name: str) -> EntityBuilding | None:
+    def find_tower_entity(self, name: str) -> EntityTower | None:
         for e in self.entities.values():
-            if isinstance(e, EntityBuilding) and e.name == name:
+            if isinstance(e, EntityTower) and e.name == name:
                 return e
         return None
 
@@ -42,4 +40,10 @@ class World(BaseModel):
         for id_, e in self.entities.items():
             if isinstance(e, EntityBuilding) and e.name == name:
                 return id_
+        return None
+
+    def find_building_entity(self, name: str) -> EntityBuilding | None:
+        for e in self.entities.values():
+            if isinstance(e, EntityBuilding) and e.name == name:
+                return e
         return None

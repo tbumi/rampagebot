@@ -128,7 +128,7 @@ class SmartBot:
         my_team = TeamName_to_goodbad(self.team)
 
         if not hero.at_lane:
-            _, tower_entity = self.world.find_tower_entity(
+            tower_entity = self.world.find_tower_entity(
                 f"dota_{my_team}guys_tower1_{hero.lane.value}"
             )
             assert tower_entity is not None
@@ -164,7 +164,7 @@ class SmartBot:
 
         my_team = TeamName_to_goodbad(self.team)
         if not hero.at_lane:
-            _, tower_entity = self.world.find_tower_entity(
+            tower_entity = self.world.find_tower_entity(
                 f"dota_{my_team}guys_tower1_{hero.lane.value}"
             )
             assert tower_entity is not None
@@ -206,8 +206,9 @@ class SmartBot:
     def retreat(self, hero: Hero) -> Command:
         assert self.world is not None
         assert hero.info is not None
-        tower = find_closest_tower(self.team, self.world, hero)
-        retreat_dest: BaseEntity | None = tower[1]
+        retreat_dest: BaseEntity | None = find_closest_tower(
+            self.team, self.world, hero
+        )
         if retreat_dest is None:
             team = TeamName_to_goodbad(self.team)
             retreat_dest = self.world.find_building_entity(f"ent_dota_fountain_{team}")

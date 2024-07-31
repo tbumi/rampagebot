@@ -137,10 +137,10 @@ def generate_rl_observations(
 
             for tower_enum in TowerEnum:
                 tower_name = tower_enum.name[1:].lower()
-                _, tower = world.find_tower_entity(
+                tower = world.find_tower_entity(
                     f"dota_{enemy_g_or_b}guys_tower{tower_name}"
                 )
-                _, tower_from_enemy_perspective = enemy_world.find_tower_entity(
+                tower_from_enemy_perspective = enemy_world.find_tower_entity(
                     f"dota_{enemy_g_or_b}guys_tower{tower_name}"
                 )
                 if tower is None:
@@ -199,10 +199,10 @@ def store_rewards(
                             continue
                         if tower in hero.unrewarded.team_tower_kills:
                             continue
-                        _, tower_from_self_world = world.find_tower_entity(
+                        tower_from_self_world = world.find_tower_entity(
                             f"dota_{enemy_g_or_b}guys_tower{tower.name[1:].lower()}"
                         )
-                        _, tower_from_enemy_world = enemy_world.find_tower_entity(
+                        tower_from_enemy_world = enemy_world.find_tower_entity(
                             f"dota_{enemy_g_or_b}guys_tower{tower.name[1:].lower()}"
                         )
                         if (
