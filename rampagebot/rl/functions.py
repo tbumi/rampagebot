@@ -7,6 +7,7 @@ from rampagebot.bot.enums import LaneOptions
 from rampagebot.bot.SmartBot import SmartBot
 from rampagebot.bot.utils import TeamName_to_goodbad, distance_between, is_left_of_line
 from rampagebot.models.dota.BaseEntity import Vector
+from rampagebot.models.GameEndStatistics import GameEndStatistics
 from rampagebot.models.GameUpdate import GameUpdate
 from rampagebot.models.TeamName import TeamName, enemy_team
 from rampagebot.rl.models import (
@@ -284,7 +285,7 @@ def assign_rewards(bots: dict[TeamName, SmartBot]) -> dict[str, float]:
                 else:
                     rew[stat.name] = 0
 
-            # TODO: count ancient kill? or ancient HP change
+            # TODO: count ancient and tower HP change
             all_rewards[f"{team.value}_{i+1}"] = sum(
                 [
                     1 * rew["kills"],
@@ -296,4 +297,23 @@ def assign_rewards(bots: dict[TeamName, SmartBot]) -> dict[str, float]:
                     4 * rew["team_barracks_kills"],
                 ]
             )
+    return all_rewards
+
+
+def assign_final_rewards(
+    end_stats: GameEndStatistics, bots: dict[TeamName, SmartBot]
+) -> dict[str, float]:
+    all_rewards = {}
+    for team in TeamName:
+        if end_stats.winner is None:
+            # game truncated due to exceeding game time limit
+            reward = -5.0
+        elif end_stats.winner == team:
+            # team won
+            reward = 10.0
+        else:
+            # team lost
+            reward = 0.0
+        for i in range(len(bots[team].heroes)):
+            all_rewards[f"{team.value}_{i+1}"] = reward
     return all_rewards

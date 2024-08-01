@@ -20,12 +20,14 @@ from rampagebot.bot.heroes.Viper import Viper
 from rampagebot.bot.heroes.WitchDoctor import WitchDoctor
 from rampagebot.bot.SmartBot import SmartBot
 from rampagebot.models.Commands import Command
+from rampagebot.models.GameEndStatistics import GameEndStatistics
 from rampagebot.models.GameStatusResponse import GameStatusResponse
 from rampagebot.models.GameUpdate import GameUpdate
 from rampagebot.models.Settings import Settings
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 from rampagebot.rl.functions import (
+    assign_final_rewards,
     assign_rewards,
     generate_rl_observations,
     store_rewards,
@@ -110,6 +112,7 @@ async def send_settings() -> Settings:
     }
     app.state.episode_id = app.state.rl_client.start_episode()
     app.state.last_observation = {}
+    app.state.game_ended = False
 
     return Settings(
         should_have_pre_game_delay=False,
@@ -117,7 +120,7 @@ async def send_settings() -> Settings:
         grant_global_vision=False,
         spectator_mode=True,
         auto_restart_client_on_server_restart=True,
-        max_game_duration=-1,  # in minutes
+        max_game_duration=120,  # in minutes
         radiant_party_names=[
             hero.name for hero in app.state.bots[TeamName.RADIANT].heroes
         ],
@@ -130,6 +133,9 @@ async def send_settings() -> Settings:
 async def game_update_endpoint(
     game_update: GameUpdate, req: Request
 ) -> list[dict[str, Command]]:
+    if app.state.game_ended:
+        return []
+
     if game_update.update_count % 10 == 0:
         dir_path = Path("./json_samples")
         dir_path.mkdir(parents=True, exist_ok=True)
@@ -174,15 +180,21 @@ async def game_update_endpoint(
 
 @app.post("/api/restart_game", status_code=status.HTTP_204_NO_CONTENT)
 async def restart_game() -> None:
+    app.state.game_ended = True
     return
 
 
 @app.post("/api/game_ended")
-async def game_ended() -> GameStatusResponse:
-    # rewards = calculate_rewards(game_update, app.state.bots)
-    # app.state.rl_client.log_returns(app.state.episode_id, rewards)
+async def game_ended(game_end_stats: GameEndStatistics) -> GameStatusResponse:
+    app.state.game_ended = True
+    rewards = assign_final_rewards(game_end_stats, app.state.bots)
+    print(f"{rewards=}")
+    app.state.rl_client.log_returns(app.state.episode_id, rewards)
+
     app.state.rl_client.end_episode(app.state.episode_id, app.state.last_observation)
+
     # TODO: handle end statistics
+
     app.state.games_remaining -= 1
     if app.state.games_remaining > 0:
         return GameStatusResponse(status="restart")
