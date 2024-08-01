@@ -20,6 +20,7 @@ from rampagebot.models.Commands import (
     CourierTransferItemsCommand,
     LevelUpCommand,
     MoveCommand,
+    SwapItemSlotsCommand,
 )
 from rampagebot.models.dota.BaseEntity import BaseEntity
 from rampagebot.models.dota.EntityCourier import EntityCourier
@@ -73,6 +74,11 @@ class SmartBot:
                     next_ability_name
                 ).ability_index
                 commands.append({hero.name: LevelUpCommand(ability=next_ability_index)})
+                continue
+
+            item_related_command = self.adjust_inventory_order(hero)
+            if item_related_command is not None:
+                commands.append({hero.name: item_related_command})
                 continue
 
             courier = self.world.entities.get(hero.info.courier_id)
@@ -214,3 +220,35 @@ class SmartBot:
             retreat_dest = self.world.find_building_entity(f"ent_dota_fountain_{team}")
             assert retreat_dest is not None
         return MoveCommand.to(retreat_dest.origin)
+
+    def adjust_inventory_order(self, hero: Hero) -> Command | None:
+        assert hero.info is not None
+        filled_backpack_slots = [
+            i for i in range(6, 9) if hero.info.items[i] is not None
+        ]
+        empty_inv_slots = [i for i in range(6) if hero.info.items[i] is None]
+        if filled_backpack_slots:
+            if empty_inv_slots:
+                backpack_slot = filled_backpack_slots[0]
+                inventory_slot = empty_inv_slots[0]
+                return SwapItemSlotsCommand(slot1=backpack_slot, slot2=inventory_slot)
+
+            for b in filled_backpack_slots:
+                backpack_item = hero.info.items[b]
+                # already checked when building filled_backpack_slots
+                assert backpack_item is not None
+                backpack_item_cost = self.items_data[
+                    backpack_item.name.removeprefix("item_")
+                ]["cost"]
+                item_costs = []
+                for i in range(6):
+                    inventory_item = hero.info.items[i]
+                    # empty_inv_slots list is empty so all slots must have an item
+                    assert inventory_item is not None
+                    item_name = inventory_item.name.removeprefix("item_")
+                    item_costs.append(self.items_data[item_name]["cost"])
+                cheapest_item_slot = min(range(6), key=item_costs.__getitem__)
+                if item_costs[cheapest_item_slot] < backpack_item_cost:
+                    return SwapItemSlotsCommand(slot1=b, slot2=cheapest_item_slot)
+
+        return None
