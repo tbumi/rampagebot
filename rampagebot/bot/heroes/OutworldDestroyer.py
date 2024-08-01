@@ -1,6 +1,12 @@
 from rampagebot.bot.enums import LaneOptions, RoleOptions
 from rampagebot.bot.heroes.Hero import Hero
-from rampagebot.models.Commands import Command
+from rampagebot.bot.utils import find_nearest_enemy_hero
+from rampagebot.models.Commands import (
+    AttackCommand,
+    CastTargetAreaCommand,
+    CastTargetUnitCommand,
+    Command,
+)
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
@@ -67,4 +73,25 @@ class OutworldDestroyer(Hero):
             # hero is dead
             return None
 
-        return None
+        orb = self.info.find_ability_by_name("obsidian_destroyer_arcane_orb")
+        astral = self.info.find_ability_by_name(
+            "obsidian_destroyer_astral_imprisonment"
+        )
+        sanity = self.info.find_ability_by_name("obsidian_destroyer_sanity_eclipse")
+
+        target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
+        if target is None:
+            return None
+        target_id, target_entity, _ = target
+
+        if self.can_cast_ability(astral):
+            return CastTargetUnitCommand(ability=astral.ability_index, target=target_id)
+
+        if self.can_cast_ability(sanity):
+            x, y, z = target_entity.origin
+            return CastTargetAreaCommand(ability=sanity.ability_index, x=x, y=y, z=z)
+
+        if self.can_cast_ability(orb):
+            return CastTargetUnitCommand(ability=orb.ability_index, target=target_id)
+
+        return AttackCommand(target=target_id)

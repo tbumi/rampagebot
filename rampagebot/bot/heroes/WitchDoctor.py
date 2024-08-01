@@ -11,7 +11,6 @@ from rampagebot.models.Commands import (
     CastTargetPointCommand,
     CastTargetUnitCommand,
     Command,
-    MoveCommand,
 )
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
@@ -98,15 +97,6 @@ class WitchDoctor(Hero):
             )
             return CastTargetPointCommand(
                 ability=death_ward.ability_index, x=x, y=y, z=z
-            )
-
-        if self.info.has_aggro or self.info.has_tower_aggro:
-            return MoveCommand.to(
-                point_at_distance(
-                    target_entity.origin,
-                    self.info.origin,
-                    distance_between(self.info.origin, target_entity.origin) * 2,
-                )
             )
 
         return AttackCommand(target=target_id)

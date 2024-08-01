@@ -1,6 +1,12 @@
 from rampagebot.bot.enums import LaneOptions, RoleOptions
 from rampagebot.bot.heroes.Hero import Hero
-from rampagebot.models.Commands import Command
+from rampagebot.bot.utils import find_nearest_enemy_hero
+from rampagebot.models.Commands import (
+    AttackCommand,
+    CastTargetAreaCommand,
+    CastTargetUnitCommand,
+    Command,
+)
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
@@ -68,4 +74,25 @@ class Viper(Hero):
             # hero is dead
             return None
 
-        return None
+        poison_atk = self.info.find_ability_by_name("viper_poison_attack")
+        toxin = self.info.find_ability_by_name("viper_nethertoxin")
+        strike = self.info.find_ability_by_name("viper_viper_strike")
+
+        target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
+        if target is None:
+            return None
+        target_id, target_entity, _ = target
+
+        if self.can_cast_ability(toxin):
+            x, y, z = target_entity.origin
+            return CastTargetAreaCommand(ability=toxin.ability_index, x=x, y=y, z=z)
+
+        if self.can_cast_ability(strike):
+            return CastTargetUnitCommand(ability=strike.ability_index, target=target_id)
+
+        if self.can_cast_ability(poison_atk):
+            return CastTargetUnitCommand(
+                ability=poison_atk.ability_index, target=target_id
+            )
+
+        return AttackCommand(target=target_id)

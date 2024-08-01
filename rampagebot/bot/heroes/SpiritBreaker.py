@@ -1,16 +1,11 @@
 from rampagebot.bot.enums import LaneOptions, RoleOptions
 from rampagebot.bot.heroes.Hero import Hero
-from rampagebot.bot.utils import (
-    distance_between,
-    find_nearest_enemy_hero,
-    point_at_distance,
-)
+from rampagebot.bot.utils import find_nearest_enemy_hero
 from rampagebot.models.Commands import (
     AttackCommand,
     CastNoTargetCommand,
     CastTargetUnitCommand,
     Command,
-    MoveCommand,
 )
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
@@ -94,15 +89,6 @@ class SpiritBreaker(Hero):
         if self.can_cast_ability(nether_strike):
             return CastTargetUnitCommand(
                 ability=nether_strike.ability_index, target=target_id
-            )
-
-        if self.info.has_aggro or self.info.has_tower_aggro:
-            return MoveCommand.to(
-                point_at_distance(
-                    target_entity.origin,
-                    self.info.origin,
-                    distance_between(self.info.origin, target_entity.origin) * 2,
-                )
             )
 
         return AttackCommand(target=target_id)

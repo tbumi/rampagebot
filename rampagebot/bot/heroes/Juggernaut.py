@@ -1,6 +1,13 @@
 from rampagebot.bot.enums import LaneOptions, RoleOptions
 from rampagebot.bot.heroes.Hero import Hero
-from rampagebot.models.Commands import Command
+from rampagebot.bot.utils import find_nearest_enemy_hero
+from rampagebot.models.Commands import (
+    AttackCommand,
+    CastNoTargetCommand,
+    CastTargetAreaCommand,
+    CastTargetUnitCommand,
+    Command,
+)
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
@@ -67,4 +74,23 @@ class Juggernaut(Hero):
             # hero is dead
             return None
 
-        return None
+        fury = self.info.find_ability_by_name("juggernaut_blade_fury")
+        ward = self.info.find_ability_by_name("juggernaut_healing_ward")
+        omni = self.info.find_ability_by_name("juggernaut_omni_slash")
+
+        target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
+        if target is None:
+            return None
+        target_id, _, _ = target
+
+        if self.can_cast_ability(ward):
+            x, y, z = self.info.origin
+            return CastTargetAreaCommand(ability=ward.ability_index, x=x, y=y, z=z)
+
+        if self.can_cast_ability(omni):
+            return CastTargetUnitCommand(ability=omni.ability_index, target=target_id)
+
+        if self.can_cast_ability(fury):
+            return CastNoTargetCommand(ability=fury.ability_index)
+
+        return AttackCommand(target=target_id)

@@ -8,12 +8,12 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from ray.rllib.env.policy_client import PolicyClient
 
+from rampagebot.bot.heroes.CrystalMaiden import CrystalMaiden
 from rampagebot.bot.heroes.Jakiro import Jakiro
 from rampagebot.bot.heroes.Juggernaut import Juggernaut
 from rampagebot.bot.heroes.Lion import Lion
 from rampagebot.bot.heroes.OutworldDestroyer import OutworldDestroyer
 from rampagebot.bot.heroes.PhantomAssassin import PhantomAssassin
-from rampagebot.bot.heroes.ShadowShaman import ShadowShaman
 from rampagebot.bot.heroes.Sniper import Sniper
 from rampagebot.bot.heroes.SpiritBreaker import SpiritBreaker
 from rampagebot.bot.heroes.Viper import Viper
@@ -105,7 +105,7 @@ async def send_settings() -> Settings:
                 OutworldDestroyer(TeamName.DIRE),
                 Viper(TeamName.DIRE),
                 Juggernaut(TeamName.DIRE),
-                ShadowShaman(TeamName.DIRE),
+                CrystalMaiden(TeamName.DIRE),
                 Jakiro(TeamName.DIRE),
             ],
         ),

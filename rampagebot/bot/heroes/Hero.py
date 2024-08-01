@@ -44,7 +44,7 @@ class Hero:
         return (
             self.info is not None
             and ability.level > 0
-            and ability.cooldown_time_remaining == 0
+            and ability.cooldown_time_remaining == 0.0
             and self.info.mana > ability.mana_cost
         )
 
