@@ -3,9 +3,14 @@ from dataclasses import fields
 import numpy as np
 
 from rampagebot.bot.constants import BOT_LEFT, MID_LEFT, MID_RIGHT, TOP_RIGHT
-from rampagebot.bot.enums import LaneOptions
+from rampagebot.bot.enums import LanePosition
 from rampagebot.bot.SmartBot import SmartBot
-from rampagebot.bot.utils import TeamName_to_goodbad, distance_between, is_left_of_line
+from rampagebot.bot.utils import (
+    TeamName_to_goodbad,
+    distance_between,
+    is_left_of_line,
+    lane_assignment_to_pos,
+)
 from rampagebot.models.dota.BaseEntity import Vector
 from rampagebot.models.GameEndStatistics import GameEndStatistics
 from rampagebot.models.GameUpdate import GameUpdate
@@ -24,18 +29,18 @@ from rampagebot.rl.models import (
 # example: radiant_1, dire_4
 
 
-def which_lane(hero_pos: Vector) -> LaneOptions:
+def which_lane(hero_pos: Vector) -> LanePosition:
     if is_left_of_line(BOT_LEFT, MID_LEFT, hero_pos) or is_left_of_line(
         MID_LEFT, TOP_RIGHT, hero_pos
     ):
-        return LaneOptions.top
+        return LanePosition.TOP
 
     if not is_left_of_line(BOT_LEFT, MID_RIGHT, hero_pos) or not is_left_of_line(
         MID_RIGHT, TOP_RIGHT, hero_pos
     ):
-        return LaneOptions.bottom
+        return LanePosition.BOTTOM
 
-    return LaneOptions.middle
+    return LanePosition.MIDDLE
 
 
 def time_to_next_sunrise_sunset(time_of_day: float) -> float:
@@ -93,10 +98,11 @@ def generate_rl_observations(
                 "pct_mana": hero.info.mana / hero.info.max_mana,
                 "current_lane": (
                     1.0
-                    if current_lane == LaneOptions.top
-                    else 2.0 if current_lane == LaneOptions.middle else 3.0
+                    if current_lane == LanePosition.TOP
+                    else 2.0 if current_lane == LanePosition.MIDDLE else 3.0
                 ),
-                "in_assigned_lane": current_lane == hero.lane,
+                "in_assigned_lane": current_lane
+                == lane_assignment_to_pos(hero.lane, team),
             }
 
             for j in range(1, 5):

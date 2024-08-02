@@ -12,6 +12,7 @@ from rampagebot.bot.utils import (
     find_enemy_creeps_in_lane,
     find_nearest_enemy_creeps,
     find_next_push_target,
+    lane_assignment_to_pos,
     point_at_distance,
 )
 from rampagebot.models.Commands import (
@@ -173,8 +174,9 @@ class SmartBot:
         my_team = TeamName_to_goodbad(self.team)
 
         if not hero.at_lane:
+            tower_pos = lane_assignment_to_pos(hero.lane, self.team)
             tower_entity = self.world.find_tower_entity(
-                f"dota_{my_team}guys_tower1_{hero.lane.value}"
+                f"dota_{my_team}guys_tower1_{tower_pos.value}"
             )
             assert tower_entity is not None
             if distance_between(hero.info.origin, tower_entity.origin) > 200:
@@ -197,7 +199,9 @@ class SmartBot:
                 return AttackCommand(target=creep_id)
 
         building_id = find_next_push_target(
-            enemy_team(self.team), self.world, hero.lane
+            enemy_team(self.team),
+            self.world,
+            lane_assignment_to_pos(hero.lane, self.team),
         )
         if building_id is None:
             return None
@@ -209,8 +213,9 @@ class SmartBot:
 
         my_team = TeamName_to_goodbad(self.team)
         if not hero.at_lane:
+            tower_pos = lane_assignment_to_pos(hero.lane, self.team)
             tower_entity = self.world.find_tower_entity(
-                f"dota_{my_team}guys_tower1_{hero.lane.value}"
+                f"dota_{my_team}guys_tower1_{tower_pos.value}"
             )
             assert tower_entity is not None
             if distance_between(hero.info.origin, tower_entity.origin) > 200:
@@ -221,7 +226,9 @@ class SmartBot:
                 hero.at_lane = True
                 hero.moving = False
 
-        creeps = find_enemy_creeps_in_lane(self.world, hero.lane, self.team)
+        creeps = find_enemy_creeps_in_lane(
+            self.world, lane_assignment_to_pos(hero.lane, self.team), self.team
+        )
         if not creeps:
             return None
 

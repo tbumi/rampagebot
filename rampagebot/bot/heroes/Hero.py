@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from rampagebot.bot.constants import SECRET_SHOP_ITEMS
-from rampagebot.bot.enums import LaneOptions, RoleAssignmentEnum
+from rampagebot.bot.enums import LaneAssignment, RoleAssignmentEnum
 from rampagebot.models.Commands import Command
 from rampagebot.models.dota.Ability import Ability
 from rampagebot.models.dota.EntityCourier import EntityCourier
@@ -13,7 +13,7 @@ from rampagebot.rl.models import Rewards
 @dataclass
 class Hero:
     name: str
-    lane: LaneOptions
+    lane: LaneAssignment
     role: RoleAssignmentEnum
 
     ability_build: list[str]

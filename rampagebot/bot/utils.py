@@ -1,7 +1,7 @@
 import math
 
 from rampagebot.bot.constants import BOT_LEFT, MID_LEFT, MID_RIGHT, TOP_RIGHT
-from rampagebot.bot.enums import LaneOptions
+from rampagebot.bot.enums import LaneAssignment, LanePosition
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.models.dota.BaseEntity import Vector
 from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
@@ -22,6 +22,21 @@ def TeamName_to_DOTATeam(team: TeamName) -> DOTATeam:
 
 def TeamName_to_goodbad(team: TeamName) -> str:
     return {TeamName.RADIANT: "good", TeamName.DIRE: "bad"}[team]
+
+
+def lane_assignment_to_pos(lane: LaneAssignment, team: TeamName) -> LanePosition:
+    if lane == LaneAssignment.MIDDLE:
+        return LanePosition.MIDDLE
+    return {
+        TeamName.RADIANT: {
+            LaneAssignment.OFFLANE: LanePosition.TOP,
+            LaneAssignment.SAFELANE: LanePosition.BOTTOM,
+        },
+        TeamName.DIRE: {
+            LaneAssignment.OFFLANE: LanePosition.BOTTOM,
+            LaneAssignment.SAFELANE: LanePosition.TOP,
+        },
+    }[team][lane]
 
 
 def distance_between(obj1_loc: Vector, obj2_loc: Vector) -> float:
@@ -73,7 +88,7 @@ def find_nearest_enemy_creeps(
 
 
 def find_enemy_creeps_in_lane(
-    world: World, lane: LaneOptions, hero_team: TeamName
+    world: World, lane: LanePosition, hero_team: TeamName
 ) -> list[tuple[str, EntityBaseNPC]]:
     creeps: list[tuple[str, EntityBaseNPC]] = []
     for id_, entity in world.entities.items():
@@ -83,12 +98,12 @@ def find_enemy_creeps_in_lane(
             and entity.team != TeamName_to_DOTATeam(hero_team)
             and entity.alive
         ):
-            if lane == LaneOptions.top:
+            if lane == LanePosition.TOP:
                 if is_left_of_line(
                     BOT_LEFT, MID_LEFT, entity.origin
                 ) or is_left_of_line(MID_LEFT, TOP_RIGHT, entity.origin):
                     creeps.append((id_, entity))
-            elif lane == LaneOptions.bottom:
+            elif lane == LanePosition.BOTTOM:
                 if not is_left_of_line(
                     BOT_LEFT, MID_RIGHT, entity.origin
                 ) or not is_left_of_line(MID_RIGHT, TOP_RIGHT, entity.origin):
@@ -133,7 +148,7 @@ def effective_damage(damage: float, armor: float) -> float:
 
 
 def find_next_push_target(
-    team_name: TeamName, world: World, lane: LaneOptions
+    team_name: TeamName, world: World, lane: LanePosition
 ) -> None | str:
     team = TeamName_to_goodbad(team_name)
     for tier in range(1, 4):
@@ -164,7 +179,7 @@ def find_closest_tower(
     assert hero.info is not None
     team = TeamName_to_goodbad(team_name)
     distances: list[tuple[EntityTower, float]] = []
-    for lane in LaneOptions:
+    for lane in LanePosition:
         for tier in range(1, 5):
             tower = world.find_tower_entity(f"dota_{team}guys_tower{tier}_{lane.value}")
             if tower is not None:

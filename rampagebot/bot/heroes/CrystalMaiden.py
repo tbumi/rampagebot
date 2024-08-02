@@ -1,4 +1,4 @@
-from rampagebot.bot.enums import LaneOptions, RoleAssignmentEnum
+from rampagebot.bot.enums import LaneAssignment, RoleAssignmentEnum
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
 from rampagebot.models.Commands import (
@@ -17,7 +17,7 @@ class CrystalMaiden(Hero):
         self.team = team
         super().__init__(
             name="npc_dota_hero_crystal_maiden",
-            lane=LaneOptions.bottom,
+            lane=LaneAssignment.SAFELANE,
             role=RoleAssignmentEnum.support,
             ability_build=[
                 "crystal_maiden_crystal_nova",

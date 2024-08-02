@@ -1,10 +1,16 @@
 from enum import Enum
 
 
-class LaneOptions(Enum):
-    top = "top"
-    middle = "mid"
-    bottom = "bot"
+class LaneAssignment(Enum):
+    OFFLANE = "offlane"
+    MIDDLE = "middle"
+    SAFELANE = "safelane"
+
+
+class LanePosition(Enum):
+    TOP = "top"
+    MIDDLE = "mid"
+    BOTTOM = "bot"
 
 
 # TODO save lanes as offlane/safe lane instead of top/bot

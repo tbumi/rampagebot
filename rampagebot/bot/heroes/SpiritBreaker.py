@@ -1,4 +1,4 @@
-from rampagebot.bot.enums import LaneOptions, RoleAssignmentEnum
+from rampagebot.bot.enums import LaneAssignment, RoleAssignmentEnum
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
 from rampagebot.models.Commands import (
@@ -16,7 +16,7 @@ class SpiritBreaker(Hero):
         self.team = team
         super().__init__(
             name="npc_dota_hero_spirit_breaker",
-            lane=LaneOptions.bottom,
+            lane=LaneAssignment.SAFELANE,
             role=RoleAssignmentEnum.carry,
             ability_build=[
                 "spirit_breaker_greater_bash",
