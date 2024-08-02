@@ -35,27 +35,6 @@ from rampagebot.rl.functions import (
 
 NUMBER_OF_GAMES = 100
 
-STAT_FIELDS = [
-    "id",
-    "team",
-    "name",
-    "gold",
-    "level",
-    "dmg_dealt_hero",
-    "dmg_dealt_struct",
-    "dmg_dealt_creep",
-    "total_dmg_dealt",
-    "dmg_received_hero",
-    "dmg_received_struct",
-    "dmg_received_creep",
-    "total_dmg_received",
-    "last_hits",
-    "kills",
-    "deaths",
-    "assists",
-    "denies",
-]
-
 # policy server for RL training
 SERVER_ADDRESS = "localhost"
 SERVER_PORT = 9090
