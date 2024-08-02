@@ -25,8 +25,6 @@ class Hero:
     ability_3: str
     ability_4: str
 
-    moving: bool = False
-    at_lane: bool = False
     courier_transferring_items: bool = False
 
     info: EntityPlayerHero | None = None

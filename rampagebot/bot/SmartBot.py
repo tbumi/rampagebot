@@ -9,7 +9,7 @@ from rampagebot.bot.utils import (
     effective_damage,
     find_closest_tower,
     find_closest_tree_id,
-    find_enemy_creeps_in_lane,
+    find_furthest_friendly_creep_in_lane,
     find_nearest_enemy_creeps,
     find_next_push_target,
     lane_assignment_to_pos,
@@ -54,8 +54,6 @@ class SmartBot:
         for i, hero in enumerate(self.heroes):
             if hero.info is None:
                 # hero is dead
-                hero.moving = False
-                hero.at_lane = False
                 # this command is needed to get hero out of "dead" status after respawn
                 base = BOT_LEFT if self.team == TeamName.RADIANT else TOP_RIGHT
                 commands.append({hero.name: MoveCommand.to(base)})
@@ -171,21 +169,15 @@ class SmartBot:
     def push_lane(self, hero: Hero) -> Command | None:
         assert self.world is not None
         assert hero.info is not None
-        my_team = TeamName_to_goodbad(self.team)
 
-        if not hero.at_lane:
-            tower_pos = lane_assignment_to_pos(hero.lane, self.team)
-            tower_entity = self.world.find_tower_entity(
-                f"dota_{my_team}guys_tower1_{tower_pos.value}"
-            )
-            assert tower_entity is not None
-            if distance_between(hero.info.origin, tower_entity.origin) > 200:
-                if not hero.moving:
-                    hero.moving = True
-                    return MoveCommand.to(tower_entity.origin)
-            else:
-                hero.at_lane = True
-                hero.moving = False
+        furthest_creep_id = find_furthest_friendly_creep_in_lane(
+            self.world, lane_assignment_to_pos(hero.lane, self.team), self.team
+        )
+        if furthest_creep_id is None:
+            return None
+        furthest_creep_pos = self.world.entities[furthest_creep_id].origin
+        if distance_between(hero.info.origin, furthest_creep_pos) > 500:
+            return MoveCommand.to(furthest_creep_pos)
 
         creeps = find_nearest_enemy_creeps(hero.info.origin, self.world, self.team, 1)
         if creeps:
@@ -211,44 +203,31 @@ class SmartBot:
         assert self.world is not None
         assert hero.info is not None
 
-        my_team = TeamName_to_goodbad(self.team)
-        if not hero.at_lane:
-            tower_pos = lane_assignment_to_pos(hero.lane, self.team)
-            tower_entity = self.world.find_tower_entity(
-                f"dota_{my_team}guys_tower1_{tower_pos.value}"
-            )
-            assert tower_entity is not None
-            if distance_between(hero.info.origin, tower_entity.origin) > 200:
-                if not hero.moving:
-                    hero.moving = True
-                    return MoveCommand.to(tower_entity.origin)
-            else:
-                hero.at_lane = True
-                hero.moving = False
-
-        creeps = find_enemy_creeps_in_lane(
+        furthest_creep_id = find_furthest_friendly_creep_in_lane(
             self.world, lane_assignment_to_pos(hero.lane, self.team), self.team
         )
-        if not creeps:
+        if furthest_creep_id is None:
             return None
+        furthest_creep_pos = self.world.entities[furthest_creep_id].origin
+        if distance_between(hero.info.origin, furthest_creep_pos) > 700:
+            return MoveCommand.to(furthest_creep_pos)
 
-        own_fountain = BOT_LEFT if self.team == TeamName.RADIANT else TOP_RIGHT
-        distances = [
-            (creep, distance_between(own_fountain, creep[1].origin)) for creep in creeps
-        ]
-        _, nearest_creep = min(distances, key=lambda x: x[1])[0]
         creep_wave = find_nearest_enemy_creeps(
-            nearest_creep.origin, self.world, self.team, 10
+            hero.info.origin, self.world, self.team, 10
         )
+        if not creep_wave:
+            return None
         creep_with_lowest_health_id, creep_with_lowest_health, _ = min(
-            [(c, c[1].health) for c in creep_wave], key=lambda x: x[1]
-        )[0]
+            creep_wave, key=lambda c: c[1].health
+        )
 
-        if creep_with_lowest_health.health < effective_damage(
-            hero.info.attack_damage, creep_with_lowest_health.armor
+        if creep_with_lowest_health.health < (
+            effective_damage(hero.info.attack_damage, creep_with_lowest_health.armor)
+            * 1.1
         ):
             return AttackCommand(target=creep_with_lowest_health_id)
 
+        own_fountain = BOT_LEFT if self.team == TeamName.RADIANT else TOP_RIGHT
         attack_range_distance = point_at_distance(
             creep_with_lowest_health.origin, own_fountain, hero.info.attack_range
         )

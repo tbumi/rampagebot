@@ -70,7 +70,7 @@ def find_nearest_enemy_creeps(
     world: World,
     own_team: TeamName,
     max_num_of_creeps: int,
-    distance_limit: float = 700,
+    distance_limit: float = 800,
 ) -> list[tuple[str, EntityBaseNPC, float]]:
     candidates: list[tuple[str, EntityBaseNPC, float]] = []
     for id_, entity in world.entities.items():
@@ -87,27 +87,27 @@ def find_nearest_enemy_creeps(
     return sorted(candidates, key=lambda x: x[2])[:max_num_of_creeps]
 
 
-def find_enemy_creeps_in_lane(
+def find_furthest_friendly_creep_in_lane(
     world: World, lane: LanePosition, hero_team: TeamName
-) -> list[tuple[str, EntityBaseNPC]]:
-    creeps: list[tuple[str, EntityBaseNPC]] = []
+) -> str | None:
+    creep_ids: list[str] = []
     for id_, entity in world.entities.items():
         if (
             isinstance(entity, EntityBaseNPC)
             and entity.name in ("npc_dota_creep_lane", "npc_dota_creep_siege")
-            and entity.team != TeamName_to_DOTATeam(hero_team)
+            and entity.team == TeamName_to_DOTATeam(hero_team)
             and entity.alive
         ):
             if lane == LanePosition.TOP:
                 if is_left_of_line(
                     BOT_LEFT, MID_LEFT, entity.origin
                 ) or is_left_of_line(MID_LEFT, TOP_RIGHT, entity.origin):
-                    creeps.append((id_, entity))
+                    creep_ids.append(id_)
             elif lane == LanePosition.BOTTOM:
                 if not is_left_of_line(
                     BOT_LEFT, MID_RIGHT, entity.origin
                 ) or not is_left_of_line(MID_RIGHT, TOP_RIGHT, entity.origin):
-                    creeps.append((id_, entity))
+                    creep_ids.append(id_)
             else:
                 if (
                     is_left_of_line(BOT_LEFT, MID_RIGHT, entity.origin)
@@ -115,8 +115,16 @@ def find_enemy_creeps_in_lane(
                     and not is_left_of_line(BOT_LEFT, MID_LEFT, entity.origin)
                     and not is_left_of_line(MID_LEFT, TOP_RIGHT, entity.origin)
                 ):
-                    creeps.append((id_, entity))
-    return creeps
+                    creep_ids.append(id_)
+
+    own_fountain = BOT_LEFT if hero_team == TeamName.RADIANT else TOP_RIGHT
+    if not creep_ids:
+        return None
+    furthest_creep = max(
+        creep_ids,
+        key=lambda id_: distance_between(own_fountain, world.entities[id_].origin),
+    )
+    return furthest_creep
 
 
 def find_nearest_enemy_hero(
