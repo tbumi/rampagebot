@@ -1,4 +1,4 @@
-from rampagebot.bot.enums import LaneOptions, RoleOptions
+from rampagebot.bot.enums import LaneOptions, RoleAssignmentEnum
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import (
     distance_between,
@@ -24,7 +24,7 @@ class WitchDoctor(Hero):
         super().__init__(
             name="npc_dota_hero_witch_doctor",
             lane=LaneOptions.bottom,
-            role=RoleOptions.support,  # hard supp
+            role=RoleAssignmentEnum.support,  # hard supp
             ability_build=[
                 "witch_doctor_paralyzing_cask",
                 "witch_doctor_maledict",

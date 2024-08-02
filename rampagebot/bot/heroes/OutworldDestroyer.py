@@ -1,4 +1,4 @@
-from rampagebot.bot.enums import LaneOptions, RoleOptions
+from rampagebot.bot.enums import LaneOptions, RoleAssignmentEnum
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
 from rampagebot.models.Commands import (
@@ -17,7 +17,7 @@ class OutworldDestroyer(Hero):
         super().__init__(
             name="npc_dota_hero_obsidian_destroyer",
             lane=LaneOptions.middle,
-            role=RoleOptions.carry,
+            role=RoleAssignmentEnum.carry,
             ability_build=[
                 "obsidian_destroyer_astral_imprisonment",
                 "obsidian_destroyer_arcane_orb",

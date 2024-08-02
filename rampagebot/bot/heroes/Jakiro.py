@@ -1,4 +1,4 @@
-from rampagebot.bot.enums import LaneOptions, RoleOptions
+from rampagebot.bot.enums import LaneOptions, RoleAssignmentEnum
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
 from rampagebot.models.Commands import (
@@ -17,7 +17,7 @@ class Jakiro(Hero):
         super().__init__(
             name="npc_dota_hero_jakiro",
             lane=LaneOptions.top,
-            role=RoleOptions.support,
+            role=RoleAssignmentEnum.support,
             ability_build=[
                 "jakiro_dual_breath",
                 "jakiro_liquid_fire",

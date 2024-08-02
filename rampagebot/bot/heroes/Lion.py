@@ -1,4 +1,4 @@
-from rampagebot.bot.enums import LaneOptions, RoleOptions
+from rampagebot.bot.enums import LaneOptions, RoleAssignmentEnum
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
 from rampagebot.models.Commands import AttackCommand, CastTargetUnitCommand, Command
@@ -12,7 +12,7 @@ class Lion(Hero):
         super().__init__(
             name="npc_dota_hero_lion",
             lane=LaneOptions.top,
-            role=RoleOptions.support,
+            role=RoleAssignmentEnum.support,
             ability_build=[
                 "lion_impale",
                 "lion_mana_drain",
