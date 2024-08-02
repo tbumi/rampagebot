@@ -33,7 +33,7 @@ from rampagebot.rl.functions import (
     store_rewards,
 )
 
-NUMBER_OF_GAMES = 1
+NUMBER_OF_GAMES = 100
 
 STAT_FIELDS = [
     "id",
@@ -111,6 +111,7 @@ async def send_settings() -> Settings:
         ),
     }
     app.state.episode_id = app.state.rl_client.start_episode()
+    print(f"{app.state.episode_id=}")
     app.state.last_observation = {}
     app.state.game_ended = False
 
@@ -120,7 +121,7 @@ async def send_settings() -> Settings:
         grant_global_vision=False,
         spectator_mode=True,
         auto_restart_client_on_server_restart=True,
-        max_game_duration=120,  # in minutes
+        max_game_duration=180,  # in minutes
         radiant_party_names=[
             hero.name for hero in app.state.bots[TeamName.RADIANT].heroes
         ],
@@ -155,7 +156,7 @@ async def game_update_endpoint(
         # as there haven't been any actions
         if game_update.update_count > 0:
             rewards = assign_rewards(app.state.bots)
-            print(f"{rewards=}")
+            # print(f"{rewards=}")
             app.state.rl_client.log_returns(app.state.episode_id, rewards)
 
         observations = generate_rl_observations(game_update, app.state.bots)
@@ -188,7 +189,7 @@ async def restart_game() -> None:
 async def game_ended(game_end_stats: GameEndStatistics) -> GameStatusResponse:
     app.state.game_ended = True
     rewards = assign_final_rewards(game_end_stats, app.state.bots)
-    print(f"{rewards=}")
+    # print(f"{rewards=}")
     app.state.rl_client.log_returns(app.state.episode_id, rewards)
 
     app.state.rl_client.end_episode(app.state.episode_id, app.state.last_observation)

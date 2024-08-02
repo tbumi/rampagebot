@@ -1,3 +1,6 @@
+from datetime import datetime
+from pathlib import Path
+
 import numpy as np
 import ray
 from gymnasium.spaces import Box, Discrete
@@ -31,6 +34,18 @@ def main():
     observation_space = Box(np.array(low), np.array(high))
     action_space = Discrete(len(GymAction))
 
+    def policy_mapping(agent_id, episode, *args, **kwargs) -> str:
+        if episode.episode_id % 2 == 0:
+            if agent_id.startswith("radiant"):
+                return "main"
+            else:
+                return "random"
+        else:
+            if agent_id.startswith("dire"):
+                return "main"
+            else:
+                return "random"
+
     config = (
         PPOConfig()
         .environment(
@@ -63,9 +78,7 @@ def main():
                     action_space=action_space,
                 ),
             },
-            policy_mapping_fn=lambda agent_id, *args, **kwargs: (
-                "main" if agent_id.startswith("radiant") else "random"
-            ),
+            policy_mapping_fn=policy_mapping,
             policies_to_train=["main"],
         )
         .debugging(log_level="INFO")
@@ -77,12 +90,19 @@ def main():
     )
 
     algo = config.build()
+
+    datestr = datetime.now().strftime("%Y%m%d_%H%M%S")
+    dir_path = Path("/home/traphole/code/rampagebot_results") / datestr
+    dir_path.mkdir(parents=True, exist_ok=True)
+    iteration = 0
     while True:
         try:
             result = algo.train()
-            print(pretty_print(result))
-            checkpoint_dir = algo.save().checkpoint.path
+            checkpoint_dir = algo.save(str(dir_path)).checkpoint.path
             print(f"Checkpoint saved in directory {checkpoint_dir}")
+            with open(dir_path / f"results_{iteration}.txt", "wt") as f:
+                f.write(pretty_print(result))
+            iteration += 1
         except KeyboardInterrupt:
             break
 

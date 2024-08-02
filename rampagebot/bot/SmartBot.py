@@ -149,7 +149,7 @@ class SmartBot:
                 next_command = None
             else:
                 next_action = GymAction(next_action_number)
-                print(f"{agent_name}: {next_action}")
+                # print(f"{agent_name}: {next_action}")
                 if next_action == GymAction.FARM:
                     next_command = self.farm(hero)
                 elif next_action == GymAction.PUSH:
