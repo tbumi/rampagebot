@@ -1,5 +1,6 @@
 from rampagebot.models.dota.BaseEntity import BaseEntity, Vector
 from rampagebot.models.dota.enums.DOTATeam import DOTATeam
+from rampagebot.models.dota.Modifier import Modifier
 
 
 class BaseNPC(BaseEntity):
@@ -23,3 +24,4 @@ class BaseNPC(BaseEntity):
     magicimmune: bool
     armor: float
     attack_target: str | None = None
+    modifiers: list[Modifier]

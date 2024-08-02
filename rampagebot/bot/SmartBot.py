@@ -8,6 +8,7 @@ from rampagebot.bot.utils import (
     distance_between,
     effective_damage,
     find_closest_tower,
+    find_closest_tree_id,
     find_enemy_creeps_in_lane,
     find_nearest_enemy_creeps,
     find_next_push_target,
@@ -21,6 +22,7 @@ from rampagebot.models.Commands import (
     LevelUpCommand,
     MoveCommand,
     SwapItemSlotsCommand,
+    UseItemCommand,
 )
 from rampagebot.models.dota.BaseEntity import BaseEntity
 from rampagebot.models.dota.EntityCourier import EntityCourier
@@ -56,6 +58,43 @@ class SmartBot:
                 # this command is needed to get hero out of "dead" status after respawn
                 base = BOT_LEFT if self.team == TeamName.RADIANT else TOP_RIGHT
                 commands.append({hero.name: MoveCommand.to(base)})
+                continue
+
+            items = {
+                item.name: slot
+                for slot, item in hero.info.items.items()
+                if item is not None and slot < 6
+            }
+            if (
+                hero.info.health / hero.info.max_health < 0.25
+                and "item_faerie_fire" in items
+            ):
+                commands.append(
+                    {hero.name: UseItemCommand(slot=items["item_faerie_fire"])}
+                )
+                continue
+            if (
+                hero.info.health / hero.info.max_health < 0.75
+                and "item_tango" in items
+                and "modifier_tango_heal" not in [m.name for m in hero.info.modifiers]
+            ):
+                closest_tree = find_closest_tree_id(self.world, hero.info.origin)
+                if closest_tree is not None:
+                    commands.append(
+                        {
+                            hero.name: UseItemCommand(
+                                slot=items["item_tango"], target=closest_tree
+                            )
+                        }
+                    )
+                    continue
+            if (
+                hero.info.mana / hero.info.max_mana < 0.5
+                and "item_enchanted_mango" in items
+            ):
+                commands.append(
+                    {hero.name: UseItemCommand(slot=items["item_enchanted_mango"])}
+                )
                 continue
 
             if hero.info.has_aggro:

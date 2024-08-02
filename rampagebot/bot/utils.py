@@ -7,6 +7,7 @@ from rampagebot.models.dota.BaseEntity import Vector
 from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
 from rampagebot.models.dota.EntityHero import EntityHero
 from rampagebot.models.dota.EntityTower import EntityTower
+from rampagebot.models.dota.EntityTree import EntityTree
 from rampagebot.models.dota.enums.DOTATeam import DOTATeam
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
@@ -173,4 +174,12 @@ def find_closest_tower(
     if distances:
         distances.sort(key=lambda x: x[1])
         return distances[0][0]
+    return None
+
+
+def find_closest_tree_id(world: World, location: Vector) -> str | None:
+    trees = [e for e in world.entities.items() if isinstance(e[1], EntityTree)]
+    if trees:
+        trees.sort(key=lambda x: distance_between(location, x[1].origin))
+        return trees[0][0]
     return None
