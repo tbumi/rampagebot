@@ -21,7 +21,6 @@ from rampagebot.bot.heroes.WitchDoctor import WitchDoctor
 from rampagebot.bot.SmartBot import SmartBot
 from rampagebot.models.Commands import Command
 from rampagebot.models.GameEndStatistics import GameEndStatistics
-from rampagebot.models.GameStatusResponse import GameStatusResponse
 from rampagebot.models.GameUpdate import GameUpdate
 from rampagebot.models.Settings import Settings
 from rampagebot.models.TeamName import TeamName
@@ -63,9 +62,13 @@ async def validation_exception_handler(request, exc):
     )
 
 
-@app.get("/api/settings", response_model_exclude_unset=True)
-async def send_settings() -> Settings:
+@app.get("/api/settings", response_model=Settings, response_model_exclude_unset=True)
+async def send_settings() -> Settings | Response:
     # this endpoint is called on every new game
+    if app.state.games_remaining == 0:
+        return Response(
+            status_code=status.HTTP_205_RESET_CONTENT,
+        )
     app.state.bots = {
         # TODO: figure out a way to reduce duplication of team name
         TeamName.RADIANT: SmartBot(
@@ -165,7 +168,7 @@ async def restart_game() -> None:
 
 
 @app.post("/api/game_ended")
-async def game_ended(game_end_stats: GameEndStatistics) -> GameStatusResponse:
+async def game_ended(game_end_stats: GameEndStatistics) -> None:
     app.state.game_ended = True
     rewards = assign_final_rewards(game_end_stats, app.state.bots)
     # print(f"{rewards=}")
@@ -176,7 +179,3 @@ async def game_ended(game_end_stats: GameEndStatistics) -> GameStatusResponse:
     # TODO: handle end statistics
 
     app.state.games_remaining -= 1
-    if app.state.games_remaining > 0:
-        return GameStatusResponse(status="restart")
-    else:
-        return GameStatusResponse(status="done")
