@@ -1,4 +1,4 @@
-from rampagebot.bot.enums import LaneAssignment, RoleAssignmentEnum
+from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
 from rampagebot.models.Commands import (
@@ -18,7 +18,7 @@ class Sniper(Hero):
         super().__init__(
             name="npc_dota_hero_sniper",
             lane=LaneAssignment.MIDDLE,
-            role=RoleAssignmentEnum.carry,
+            role=Role.CARRY,
             ability_build=[
                 "sniper_headshot",
                 "sniper_take_aim",

@@ -1,4 +1,4 @@
-from rampagebot.bot.enums import LaneAssignment, RoleAssignmentEnum
+from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
 from rampagebot.models.Commands import AttackCommand, CastTargetUnitCommand, Command
@@ -12,7 +12,7 @@ class PhantomAssassin(Hero):
         super().__init__(
             name="npc_dota_hero_phantom_assassin",
             lane=LaneAssignment.OFFLANE,
-            role=RoleAssignmentEnum.carry,
+            role=Role.CARRY,
             ability_build=[
                 "phantom_assassin_stifling_dagger",
                 "phantom_assassin_phantom_strike",

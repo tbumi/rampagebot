@@ -18,9 +18,9 @@ from rampagebot.models.TeamName import TeamName, enemy_team
 from rampagebot.rl.models import (
     LANE_CREEP_SPAWN_INTERVAL_SECS,
     NEUTRAL_CREEP_SPAWN_INTERVAL_SECS,
-    BarracksEnum,
+    Barracks,
     Observation,
-    TowerEnum,
+    Tower,
 )
 
 # agent name format: "teamname_i"
@@ -147,7 +147,7 @@ def generate_rl_observations(
                         enemy.health / enemy.max_health
                     )
 
-            for tower_enum in TowerEnum:
+            for tower_enum in Tower:
                 tower_name = tower_enum.name[1:].lower()
                 tower = world.find_tower_entity(
                     f"dota_{enemy_g_or_b}guys_tower{tower_name}"
@@ -206,7 +206,7 @@ def store_rewards(
         for hero in bots[team].heroes:
             for stat in fields(hero.unrewarded):
                 if stat.name == "team_tower_kills":
-                    for tower in TowerEnum:
+                    for tower in Tower:
                         if tower in hero.rewarded.team_tower_kills:
                             continue
                         if tower in hero.unrewarded.team_tower_kills:
@@ -225,7 +225,7 @@ def store_rewards(
                             hero.unrewarded.team_tower_kills.add(tower)
                     continue
                 if stat.name == "team_barracks_kills":
-                    for barracks in BarracksEnum:
+                    for barracks in Barracks:
                         if barracks in hero.rewarded.team_barracks_kills:
                             continue
                         if barracks in hero.unrewarded.team_barracks_kills:

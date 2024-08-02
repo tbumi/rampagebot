@@ -1,4 +1,4 @@
-from rampagebot.bot.enums import LaneAssignment, RoleAssignmentEnum
+from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
 from rampagebot.models.Commands import (
@@ -18,7 +18,7 @@ class Juggernaut(Hero):
         super().__init__(
             name="npc_dota_hero_juggernaut",
             lane=LaneAssignment.SAFELANE,
-            role=RoleAssignmentEnum.carry,
+            role=Role.CARRY,
             ability_build=[
                 "juggernaut_blade_fury",
                 "juggernaut_blade_dance",

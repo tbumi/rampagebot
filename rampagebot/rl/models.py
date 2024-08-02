@@ -83,7 +83,7 @@ class Observation(BaseModel):
     pct_health_of_enemy_tower_t4_bot: float = Field(ge=-1, le=1)
 
 
-class TowerEnum(Enum):
+class Tower(Enum):
     T1_TOP = auto()
     T1_MID = auto()
     T1_BOT = auto()
@@ -97,7 +97,7 @@ class TowerEnum(Enum):
     T4_BOT = auto()
 
 
-class BarracksEnum(Enum):
+class Barracks(Enum):
     MELEE_TOP = auto()
     MELEE_MID = auto()
     MELEE_BOT = auto()
@@ -113,5 +113,5 @@ class Rewards:
     assists: int = 0
     last_hits: int = 0
     denies: int = 0
-    team_tower_kills: set[TowerEnum] = field(default_factory=set)
-    team_barracks_kills: set[BarracksEnum] = field(default_factory=set)
+    team_tower_kills: set[Tower] = field(default_factory=set)
+    team_barracks_kills: set[Barracks] = field(default_factory=set)
