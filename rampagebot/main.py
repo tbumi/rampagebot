@@ -176,6 +176,15 @@ async def game_ended(game_end_stats: GameEndStatistics) -> None:
 
     app.state.rl_client.end_episode(app.state.episode_id, app.state.last_observation)
 
-    # TODO: handle end statistics
+    end_stats = game_end_stats.model_dump(mode="json")
+    end_stats["episode_id"] = app.state.episode_id
+
+    game_number = NUMBER_OF_GAMES - app.state.games_remaining
+    datestr = app.state.started_time.strftime("%Y%m%d_%H%M")
+    dir_path = Path("/home/traphole/code/rampagebot_results") / datestr
+    dir_path.mkdir(parents=True, exist_ok=True)
+    json_path = dir_path / f"{datestr}_end_statistics_{game_number}.json"
+    with open(json_path, "wt") as f:
+        json.dump(end_stats, f, indent=2)
 
     app.state.games_remaining -= 1

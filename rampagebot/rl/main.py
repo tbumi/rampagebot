@@ -35,6 +35,7 @@ def main():
     action_space = Discrete(len(GymAction))
 
     def policy_mapping(agent_id, episode, *args, **kwargs) -> str:
+        print(f"{episode.episode_id=}")
         if episode.episode_id % 2 == 0:
             if agent_id.startswith("radiant"):
                 return "main"
@@ -91,7 +92,7 @@ def main():
 
     algo = config.build()
 
-    datestr = datetime.now().strftime("%Y%m%d_%H%M%S")
+    datestr = datetime.now().strftime("%Y%m%d_%H%M")
     dir_path = Path("/home/traphole/code/rampagebot_results") / datestr
     dir_path.mkdir(parents=True, exist_ok=True)
     iteration = 0
