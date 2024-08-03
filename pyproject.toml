@@ -5,9 +5,9 @@ readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "~3.11"
 fastapi = "^0.111.0"
-ray = {version = "^2.32.0", extras = ["rllib"]}
+ray = {version = "^2.34.0", extras = ["rllib"]}
 torch = "^2.4.0"
 
 
