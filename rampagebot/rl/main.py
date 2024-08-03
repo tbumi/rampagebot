@@ -1,3 +1,4 @@
+import argparse
 from datetime import datetime
 from pathlib import Path
 
@@ -15,8 +16,15 @@ from rampagebot.rl.models import GymAction, Observation
 SERVER_ADDRESS = "localhost"
 SERVER_PORT = 9090
 
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--from-checkpoint",
+    help="Specify to continue training from that checkpoint",
+)
+
 
 def main():
+    args = parser.parse_args()
     ray.init()
 
     low = []
@@ -92,16 +100,22 @@ def main():
 
     algo = config.build()
 
+    root_dir = Path("/home/traphole/code/rampagebot_results")
+
+    if args.from_checkpoint:
+        print(f"Restoring from previous checkpoint: {args.from_checkpoint}")
+        algo.restore(str(root_dir / args.from_checkpoint))
+
     datestr = datetime.now().strftime("%Y%m%d_%H%M")
-    dir_path = Path("/home/traphole/code/rampagebot_results") / datestr
-    dir_path.mkdir(parents=True, exist_ok=True)
+    checkpoint_dir_path = root_dir / datestr
+    checkpoint_dir_path.mkdir(parents=True, exist_ok=True)
     iteration = 0
     while True:
         try:
             result = algo.train()
-            checkpoint_dir = algo.save(str(dir_path)).checkpoint.path
-            print(f"Checkpoint saved in directory {checkpoint_dir}")
-            with open(dir_path / f"results_{iteration}.txt", "wt") as f:
+            checkpoint_dir_str = algo.save(str(checkpoint_dir_path)).checkpoint.path
+            print(f"Checkpoint saved in directory {checkpoint_dir_str}")
+            with open(checkpoint_dir_path / f"results_{iteration}.txt", "wt") as f:
                 f.write(pretty_print(result))
             iteration += 1
         except KeyboardInterrupt:
