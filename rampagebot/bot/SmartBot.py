@@ -59,6 +59,10 @@ class SmartBot:
                 commands.append({hero.name: MoveCommand.to(base)})
                 continue
 
+            if hero.info.is_currently_casting:
+                # all commands will be ignored anyway when hero is currently casting
+                continue
+
             items = {
                 item.name: slot
                 for slot, item in hero.info.items.items()

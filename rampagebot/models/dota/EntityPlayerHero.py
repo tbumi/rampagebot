@@ -24,6 +24,7 @@ class EntityPlayerHero(BaseNPC):
     stash_items: LuaItemDict
     in_range_of_home_shop: bool
     in_range_of_secret_shop: bool
+    is_currently_casting: bool
 
     # alias defined here overrides alias defined in model_config
     # because for some reason courier_id is not camelCase in the json input
