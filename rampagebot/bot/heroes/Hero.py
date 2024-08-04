@@ -26,6 +26,7 @@ class Hero:
     ability_4: str
 
     courier_transferring_items: bool = False
+    courier_going_to_secret_shop: bool = False
 
     info: EntityPlayerHero | None = None
 
@@ -46,7 +47,7 @@ class Hero:
             and self.info.mana > ability.mana_cost
         )
 
-    def can_buy_item(
+    def is_in_range_of_shop(
         self, item_name: str, courier: EntityCourier | None = None
     ) -> bool:
         if self.info is None:
@@ -59,3 +60,24 @@ class Hero:
             return self.info.in_range_of_home_shop or (
                 courier is not None and courier.in_range_of_home_shop
             )
+
+    def has_free_slot(self, courier: EntityCourier | None = None) -> bool:
+        if self.info is None:
+            return False
+        if any(i is None for i in self.info.items.values()):
+            return True
+        if courier is not None and any(i is None for i in courier.items.values()):
+            return True
+        return False
+
+    def can_stack_item(self, item_name: str) -> bool:
+        if self.info is None:
+            return False
+        for item in self.info.items.values():
+            if (
+                item is not None
+                and item.name == f"item_{item_name}"
+                and item.is_stackable
+            ):
+                return True
+        return False

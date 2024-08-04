@@ -1,7 +1,7 @@
 import json
 from typing import cast
 
-from rampagebot.bot.constants import BOT_LEFT, TOP_RIGHT
+from rampagebot.bot.constants import BOT_LEFT, SECRET_SHOP_ITEMS, TOP_RIGHT
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import (
     TeamName_to_goodbad,
@@ -19,6 +19,7 @@ from rampagebot.models.Commands import (
     AttackCommand,
     BuyCommand,
     Command,
+    CourierSecretShopCommand,
     CourierTransferItemsCommand,
     LevelUpCommand,
     MoveCommand,
@@ -114,24 +115,41 @@ class SmartBot:
                 continue
 
             courier = self.world.entities.get(hero.info.courier_id)
-            if courier is not None:
-                courier = cast(EntityCourier, courier)
-                if any(courier.items.values()):
-                    if not hero.courier_transferring_items:
-                        commands.append({hero.name: CourierTransferItemsCommand()})
-                        hero.courier_transferring_items = True
-                        continue
-                else:
-                    hero.courier_transferring_items = False
+            courier = cast(EntityCourier, courier)  # only for static type checking
+            if len(hero.item_build) > 0:
+                next_item = hero.item_build[0]
+                if (
+                    hero.info.gold > self.items_data[next_item]["cost"]
+                    and hero.is_in_range_of_shop(next_item, courier)
+                    and (hero.has_free_slot(courier) or hero.can_stack_item(next_item))
+                ):
+                    hero.item_build.pop(0)
+                    commands.append({hero.name: BuyCommand(item=f"item_{next_item}")})
+                    continue
 
-            if (
-                len(hero.item_build) > 0
-                and hero.info.gold > self.items_data[hero.item_build[0]]["cost"]
-                and hero.can_buy_item(hero.item_build[0])
-            ):
-                next_item = hero.item_build.pop(0)
-                commands.append({hero.name: BuyCommand(item=f"item_{next_item}")})
-                continue
+            if courier is not None:
+                if (
+                    hero.courier_going_to_secret_shop
+                    and courier.in_range_of_secret_shop
+                ):
+                    hero.courier_going_to_secret_shop = False
+
+                if not any(courier.items.values()):
+                    hero.courier_transferring_items = False
+                elif not hero.courier_transferring_items:
+                    commands.append({hero.name: CourierTransferItemsCommand()})
+                    hero.courier_transferring_items = True
+                    continue
+
+                if (
+                    len(hero.item_build) > 0
+                    and hero.item_build[0] in SECRET_SHOP_ITEMS
+                    and not hero.courier_going_to_secret_shop
+                    and not courier.in_range_of_secret_shop
+                ):
+                    commands.append({hero.name: CourierSecretShopCommand()})
+                    hero.courier_going_to_secret_shop = True
+                    continue
 
             agent_name = f"{self.team.value}_{i+1}"
             next_action_number = actions.get(
