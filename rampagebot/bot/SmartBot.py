@@ -100,16 +100,6 @@ class SmartBot:
                 )
                 continue
 
-            if hero.info.has_aggro:
-                hero.has_had_aggro_for_ticks += 1
-            else:
-                hero.has_had_aggro_for_ticks = 0
-
-            if hero.info.has_tower_aggro or hero.has_had_aggro_for_ticks > 3:
-                retreat_command = self.retreat(hero)
-                commands.append({hero.name: retreat_command})
-                continue
-
             if len(hero.ability_build) > 0 and hero.info.ability_points > 0:
                 next_ability_name = hero.ability_build.pop(0)
                 next_ability_index = hero.info.find_ability_by_name(
