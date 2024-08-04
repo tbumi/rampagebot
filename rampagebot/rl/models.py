@@ -19,12 +19,7 @@ class Observation(BaseModel):
 
     # global
     game_time: float = Field(ge=0)
-    is_day: float = Field(ge=0, le=1)
     time_to_next_sunrise_sunset: float = Field(ge=0, le=1)
-    time_to_next_creep_wave: float = Field(ge=0, le=LANE_CREEP_SPAWN_INTERVAL_SECS)
-    time_to_next_neutral_creep_spawn: float = Field(
-        ge=0, le=NEUTRAL_CREEP_SPAWN_INTERVAL_SECS
-    )
 
     # per unit
     pos_x: float
@@ -37,8 +32,9 @@ class Observation(BaseModel):
     cooldown_ability_2: float = Field(ge=0)
     cooldown_ability_3: float = Field(ge=0)
     cooldown_ability_4: float = Field(ge=0)
+    has_aggro: float = Field(ge=0, le=1)
+    has_tower_aggro: float = Field(ge=0, le=1)
     current_lane: float = Field(ge=0, le=2)  # 0=top, 1=mid, 2=bot
-    in_assigned_lane: float = Field(ge=0, le=1)
 
     distance_to_ally_hero_1: float = Field(ge=-1)
     distance_to_ally_hero_2: float = Field(ge=-1)

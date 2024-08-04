@@ -5,23 +5,12 @@ import numpy as np
 from rampagebot.bot.constants import BOT_LEFT, MID_LEFT, MID_RIGHT, TOP_RIGHT
 from rampagebot.bot.enums import LanePosition
 from rampagebot.bot.SmartBot import SmartBot
-from rampagebot.bot.utils import (
-    TeamName_to_goodbad,
-    distance_between,
-    is_left_of_line,
-    lane_assignment_to_pos,
-)
+from rampagebot.bot.utils import TeamName_to_goodbad, distance_between, is_left_of_line
 from rampagebot.models.dota.BaseEntity import Vector
 from rampagebot.models.GameEndStatistics import GameEndStatistics
 from rampagebot.models.GameUpdate import GameUpdate
 from rampagebot.models.TeamName import TeamName, enemy_team
-from rampagebot.rl.models import (
-    LANE_CREEP_SPAWN_INTERVAL_SECS,
-    NEUTRAL_CREEP_SPAWN_INTERVAL_SECS,
-    Barracks,
-    Observation,
-    Tower,
-)
+from rampagebot.rl.models import Barracks, Observation, Tower
 
 # agent name format: "teamname_i"
 # teamname: radiant/dire
@@ -57,12 +46,6 @@ def generate_rl_observations(
     game_update: GameUpdate, bots: dict[TeamName, SmartBot]
 ) -> dict[str, np.ndarray]:
     all_observations = {}
-    ttncw = LANE_CREEP_SPAWN_INTERVAL_SECS - (
-        game_update.game_time % LANE_CREEP_SPAWN_INTERVAL_SECS
-    )
-    ttnncs = NEUTRAL_CREEP_SPAWN_INTERVAL_SECS - (
-        game_update.game_time % NEUTRAL_CREEP_SPAWN_INTERVAL_SECS
-    )
     for team in TeamName:
         world = bots[team].world
         assert world is not None
@@ -84,25 +67,22 @@ def generate_rl_observations(
             current_lane = which_lane(hero.info.origin)
             ob: dict[str, float] = {
                 "game_time": game_update.game_time,
-                "is_day": game_update.is_day,
                 "time_to_next_sunrise_sunset": time_to_next_sunrise_sunset(
                     game_update.time_of_day
                 ),
-                "time_to_next_creep_wave": ttncw,
-                "time_to_next_neutral_creep_spawn": ttnncs,
                 "pos_x": hero.info.origin[0],
                 "pos_y": hero.info.origin[1],
                 "gold": hero.info.gold,
                 "xp": hero.info.xp,
                 "pct_health": hero.info.health / hero.info.max_health,
                 "pct_mana": hero.info.mana / hero.info.max_mana,
+                "has_aggro": hero.info.has_aggro,
+                "has_tower_aggro": hero.info.has_tower_aggro,
                 "current_lane": (
                     0.0
                     if current_lane == LanePosition.TOP
                     else 1.0 if current_lane == LanePosition.MIDDLE else 2.0
                 ),
-                "in_assigned_lane": current_lane
-                == lane_assignment_to_pos(hero.lane, team),
             }
 
             for j in range(1, 5):
