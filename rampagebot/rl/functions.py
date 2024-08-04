@@ -97,9 +97,9 @@ def generate_rl_observations(
                 "pct_health": hero.info.health / hero.info.max_health,
                 "pct_mana": hero.info.mana / hero.info.max_mana,
                 "current_lane": (
-                    1.0
+                    0.0
                     if current_lane == LanePosition.TOP
-                    else 2.0 if current_lane == LanePosition.MIDDLE else 3.0
+                    else 1.0 if current_lane == LanePosition.MIDDLE else 2.0
                 ),
                 "in_assigned_lane": current_lane
                 == lane_assignment_to_pos(hero.lane, team),
