@@ -11,13 +11,13 @@ from ray.rllib.env.policy_client import PolicyClient
 from rampagebot.bot.heroes.CrystalMaiden import CrystalMaiden
 from rampagebot.bot.heroes.Jakiro import Jakiro
 from rampagebot.bot.heroes.Juggernaut import Juggernaut
+from rampagebot.bot.heroes.Lich import Lich
 from rampagebot.bot.heroes.Lion import Lion
 from rampagebot.bot.heroes.OutworldDestroyer import OutworldDestroyer
 from rampagebot.bot.heroes.PhantomAssassin import PhantomAssassin
 from rampagebot.bot.heroes.Sniper import Sniper
 from rampagebot.bot.heroes.SpiritBreaker import SpiritBreaker
 from rampagebot.bot.heroes.Viper import Viper
-from rampagebot.bot.heroes.WitchDoctor import WitchDoctor
 from rampagebot.bot.SmartBot import SmartBot
 from rampagebot.models.Commands import Command
 from rampagebot.models.GameEndStatistics import GameEndStatistics
@@ -77,7 +77,7 @@ async def send_settings() -> Settings | Response:
                 Sniper(TeamName.RADIANT),
                 PhantomAssassin(TeamName.RADIANT),
                 SpiritBreaker(TeamName.RADIANT),
-                WitchDoctor(TeamName.RADIANT),
+                Lich(TeamName.RADIANT),
                 Lion(TeamName.RADIANT),
             ],
         ),

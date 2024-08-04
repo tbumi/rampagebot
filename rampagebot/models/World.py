@@ -12,6 +12,12 @@ class World(BaseModel):
 
     entities: EntityCollection
 
+    def find_player_hero_id(self, hero_name: str) -> str | None:
+        for id_, e in self.entities.items():
+            if isinstance(e, EntityPlayerHero) and e.name == hero_name:
+                return id_
+        return None
+
     def find_player_hero_entity(self, hero_name: str) -> EntityPlayerHero | None:
         for e in self.entities.values():
             if isinstance(e, EntityPlayerHero) and e.name == hero_name:
