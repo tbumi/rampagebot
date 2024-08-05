@@ -6,7 +6,6 @@ from pathlib import Path
 from fastapi import FastAPI, Request, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from ray.rllib.env.policy_client import PolicyClient
 
 from rampagebot.bot.heroes.CrystalMaiden import CrystalMaiden
 from rampagebot.bot.heroes.Jakiro import Jakiro
@@ -34,18 +33,11 @@ from rampagebot.rl.functions import (
 
 NUMBER_OF_GAMES = 100
 
-# policy server for RL training
-SERVER_ADDRESS = "localhost"
-SERVER_PORT = 9090
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.started_time = datetime.now()
     app.state.games_remaining = NUMBER_OF_GAMES
-    app.state.rl_client = PolicyClient(
-        f"http://{SERVER_ADDRESS}:{SERVER_PORT}", inference_mode="remote"
-    )
     yield
 
 
@@ -66,6 +58,7 @@ async def validation_exception_handler(request, exc):
 async def send_settings() -> Settings | Response:
     # this endpoint is called on every new game
     if app.state.games_remaining == 0:
+        # tell server to end loop
         return Response(
             status_code=status.HTTP_205_RESET_CONTENT,
         )
@@ -92,7 +85,8 @@ async def send_settings() -> Settings | Response:
             ],
         ),
     }
-    app.state.episode_id = app.state.rl_client.start_episode()
+    if hasattr(app.state, "rl_class"):
+        app.state.episode_id = app.state.rl_class.start_episode()
     print(f"{app.state.episode_id=}")
     app.state.last_observation = {}
     app.state.game_ended = False
@@ -131,22 +125,22 @@ async def game_update_endpoint(
         for hero in bot.heroes:
             hero.info = bot.world.find_player_hero_entity(hero.name)
 
-    store_rewards(game_update.statistics, app.state.bots)
+    actions = {}
+    if hasattr(app.state, "rl_class"):
+        store_rewards(game_update.statistics, app.state.bots)
 
-    if game_update.update_count % 3 == 0:
-        # don't update rewards on the very first game step
-        # as there haven't been any actions
-        if game_update.update_count > 0:
-            rewards = assign_rewards(app.state.bots)
-            # print(f"{rewards=}")
-            app.state.rl_client.log_returns(app.state.episode_id, rewards)
+        if game_update.update_count % 3 == 0:
+            # don't update rewards on the very first game step
+            # as there haven't been any actions
+            if game_update.update_count > 0:
+                rewards = assign_rewards(app.state.bots)
+                # print(f"{rewards=}")
+                app.state.rl_class.log_returns(app.state.episode_id, rewards)
 
-        observations = generate_rl_observations(game_update, app.state.bots)
-        # print(f"{observations=}")
-        app.state.last_observation = observations
-        actions = app.state.rl_client.get_action(app.state.episode_id, observations)
-    else:
-        actions = {}
+            observations = generate_rl_observations(game_update, app.state.bots)
+            # print(f"{observations=}")
+            app.state.last_observation = observations
+            actions = app.state.rl_class.get_action(app.state.episode_id, observations)
 
     # if actions:
     #     print(f"{actions=}")
@@ -170,14 +164,16 @@ async def restart_game() -> None:
 @app.post("/api/game_ended")
 async def game_ended(game_end_stats: GameEndStatistics) -> None:
     app.state.game_ended = True
-    rewards = assign_final_rewards(game_end_stats, app.state.bots)
-    # print(f"{rewards=}")
-    app.state.rl_client.log_returns(app.state.episode_id, rewards)
+    if hasattr(app.state, "rl_class"):
+        rewards = assign_final_rewards(game_end_stats, app.state.bots)
+        # print(f"{rewards=}")
+        app.state.rl_class.log_returns(app.state.episode_id, rewards)
 
-    app.state.rl_client.end_episode(app.state.episode_id, app.state.last_observation)
+        app.state.rl_class.end_episode(app.state.episode_id, app.state.last_observation)
 
     end_stats = game_end_stats.model_dump(mode="json")
-    end_stats["episode_id"] = app.state.episode_id
+    if hasattr(app.state, "episode_id"):
+        end_stats["episode_id"] = app.state.episode_id
 
     game_number = NUMBER_OF_GAMES - app.state.games_remaining
     datestr = app.state.started_time.strftime("%Y%m%d_%H%M")

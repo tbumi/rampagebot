@@ -2,19 +2,14 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
-import numpy as np
 import ray
-from gymnasium.spaces import Box, Discrete
 from ray.rllib.algorithms.dqn.dqn import DQNConfig
-from ray.rllib.env.policy_server_input import PolicyServerInput
 from ray.rllib.examples._old_api_stack.policy.random_policy import RandomPolicy
 from ray.rllib.policy.policy import PolicySpec
 from ray.tune.logger import pretty_print
 
-from rampagebot.rl.models import GymAction, Observation
-
-SERVER_ADDRESS = "localhost"
-SERVER_PORT = 9090
+from rampagebot.rl.callback import TrainingCallback
+from rampagebot.rl.env import RampageBotEnv
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -25,22 +20,8 @@ parser.add_argument(
 
 def main():
     args = parser.parse_args()
-    ray.init()
 
-    low = []
-    high = []
-    for field_info in Observation.model_fields.values():
-        low_constraint = float("-inf")
-        high_constraint = float("inf")
-        for constraint in field_info.metadata:
-            if hasattr(constraint, "ge"):
-                low_constraint = float(constraint.ge)
-            elif hasattr(constraint, "le"):
-                high_constraint = float(constraint.le)
-        low.append(low_constraint)
-        high.append(high_constraint)
-    observation_space = Box(np.array(low), np.array(high))
-    action_space = Discrete(len(GymAction))
+    ray.init()
 
     def policy_mapping(agent_id, episode, *args, **kwargs):
         print(f"{episode.episode_id=}")
@@ -58,38 +39,22 @@ def main():
     config = (
         DQNConfig()
         .environment(
-            env=None,
-            observation_space=observation_space,
-            action_space=action_space,
+            env=RampageBotEnv,
         )
         .framework("torch")
-        .offline_data(
-            input_=lambda ioctx: PolicyServerInput(
-                ioctx,
-                SERVER_ADDRESS,
-                SERVER_PORT,
-            )
-        )
         .env_runners(
             num_env_runners=0,
             enable_connectors=False,
         )
-        .evaluation(off_policy_estimation_methods={})
         .multi_agent(
             policies={
-                "main": PolicySpec(
-                    observation_space=observation_space,
-                    action_space=action_space,
-                ),
-                "random": PolicySpec(
-                    policy_class=RandomPolicy,
-                    observation_space=observation_space,
-                    action_space=action_space,
-                ),
+                "main": PolicySpec(),
+                "random": PolicySpec(policy_class=RandomPolicy),
             },
             policy_mapping_fn=policy_mapping,
             policies_to_train=["main"],
         )
+        .callbacks(TrainingCallback)
         .debugging(log_level="INFO")
     )
 
