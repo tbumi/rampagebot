@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import ray
 from gymnasium.spaces import Box, Discrete
-from ray.rllib.algorithms.ppo import PPOConfig
+from ray.rllib.algorithms.dqn.dqn import DQNConfig
 from ray.rllib.env.policy_server_input import PolicyServerInput
 from ray.rllib.examples._old_api_stack.policy.random_policy import RandomPolicy
 from ray.rllib.policy.policy import PolicySpec
@@ -42,7 +42,7 @@ def main():
     observation_space = Box(np.array(low), np.array(high))
     action_space = Discrete(len(GymAction))
 
-    def policy_mapping(agent_id, episode, *args, **kwargs) -> str:
+    def policy_mapping(agent_id, episode, *args, **kwargs):
         print(f"{episode.episode_id=}")
         if episode.episode_id % 2 == 0:
             if agent_id.startswith("radiant"):
@@ -56,7 +56,7 @@ def main():
                 return "random"
 
     config = (
-        PPOConfig()
+        DQNConfig()
         .environment(
             env=None,
             observation_space=observation_space,
@@ -91,11 +91,6 @@ def main():
             policies_to_train=["main"],
         )
         .debugging(log_level="INFO")
-    )
-    config.update_from_dict(
-        {
-            "model": {"use_lstm": True},
-        }
     )
 
     algo = config.build()
