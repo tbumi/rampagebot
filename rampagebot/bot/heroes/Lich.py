@@ -1,3 +1,5 @@
+import random
+
 from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
@@ -96,3 +98,24 @@ class Lich(Hero):
             return CastTargetUnitCommand(ability=shield.ability_index, target=self_id)
 
         return AttackCommand(target=target_id)
+
+    def push_lane_with_abilities(
+        self, world: World, nearest_creep_ids: list[str]
+    ) -> Command | None:
+        if self.info is None:
+            # hero is dead
+            return None
+
+        blast = self.info.find_ability_by_name("lich_frost_nova")
+        if self.can_cast_ability(blast) and random.random() < 0.25:
+            return CastTargetUnitCommand(
+                ability=blast.ability_index, target=nearest_creep_ids[0]
+            )
+
+        shield = self.info.find_ability_by_name("lich_frost_shield")
+        if self.can_cast_ability(shield):
+            self_id = world.find_player_hero_id(self.name)
+            assert self_id is not None
+            return CastTargetUnitCommand(ability=shield.ability_index, target=self_id)
+
+        return None

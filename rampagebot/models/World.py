@@ -11,6 +11,7 @@ class World(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     entities: EntityCollection
+    game_time: float
 
     def find_player_hero_id(self, hero_name: str) -> str | None:
         for id_, e in self.entities.items():

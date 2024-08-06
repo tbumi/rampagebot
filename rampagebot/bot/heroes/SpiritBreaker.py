@@ -78,7 +78,7 @@ class SpiritBreaker(Hero):
         target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
         if target is None:
             return None
-        target_id, target_entity, _ = target
+        target_id, _, _ = target
 
         if self.can_cast_ability(charge):
             return CastTargetUnitCommand(ability=charge.ability_index, target=target_id)
@@ -92,3 +92,8 @@ class SpiritBreaker(Hero):
             )
 
         return AttackCommand(target=target_id)
+
+    def push_lane_with_abilities(
+        self, world: World, nearest_creep_ids: list[str]
+    ) -> Command | None:
+        return None

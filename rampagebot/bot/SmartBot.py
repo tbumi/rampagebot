@@ -18,6 +18,7 @@ from rampagebot.bot.utils import (
 from rampagebot.models.Commands import (
     AttackCommand,
     BuyCommand,
+    CastTargetUnitCommand,
     Command,
     CourierSecretShopCommand,
     CourierTransferItemsCommand,
@@ -70,16 +71,16 @@ class SmartBot:
                 if item is not None and slot < 6
             }
             if (
-                hero.info.health / hero.info.max_health < 0.25
-                and "item_faerie_fire" in items
+                "item_faerie_fire" in items
+                and hero.info.health / hero.info.max_health < 0.25
             ):
                 commands.append(
                     {hero.name: UseItemCommand(slot=items["item_faerie_fire"])}
                 )
                 continue
             if (
-                hero.info.health / hero.info.max_health < 0.75
-                and "item_tango" in items
+                "item_tango" in items
+                and hero.info.health / hero.info.max_health < 0.75
                 and "modifier_tango_heal" not in [m.name for m in hero.info.modifiers]
             ):
                 closest_tree = find_closest_tree_id(self.world, hero.info.origin)
@@ -93,8 +94,8 @@ class SmartBot:
                     )
                     continue
             if (
-                hero.info.mana / hero.info.max_mana < 0.5
-                and "item_enchanted_mango" in items
+                "item_enchanted_mango" in items
+                and hero.info.mana / hero.info.max_mana < 0.5
             ):
                 commands.append(
                     {hero.name: UseItemCommand(slot=items["item_enchanted_mango"])}
@@ -191,16 +192,32 @@ class SmartBot:
         if distance_between(hero.info.origin, furthest_creep_pos) > 500:
             return MoveCommand.to(furthest_creep_pos)
 
-        creeps = find_nearest_enemy_creeps(hero.info.origin, self.world, self.team, 1)
+        if hero.info.has_tower_aggro:
+            # de-aggro by attacking friendly creep
+            return AttackCommand(target=furthest_creep_id)
+
+        creeps = find_nearest_enemy_creeps(
+            furthest_creep_pos,
+            self.world,
+            self.team,
+            max_num_of_creeps=3,
+            distance_limit=800,
+        )
         if creeps:
-            creep_id, creep_info, _ = creeps[0]
+            nearest_creep_ids = [cid for cid, _, _ in creeps]
+            command = hero.push_lane_with_abilities(self.world, nearest_creep_ids)
+            if command is not None:
+                return command
+
             if (
-                distance_between(hero.info.origin, creep_info.origin)
+                distance_between(
+                    hero.info.origin, self.world.entities[nearest_creep_ids[0]].origin
+                )
                 > hero.info.attack_range
             ):
-                return MoveCommand.to(creep_info.origin)
-            else:
-                return AttackCommand(target=creep_id)
+                return MoveCommand.to(self.world.entities[nearest_creep_ids[0]].origin)
+
+            return AttackCommand(target=nearest_creep_ids[0])
 
         building_id = find_next_push_target(
             enemy_team(self.team),
@@ -209,6 +226,19 @@ class SmartBot:
         )
         if building_id is None:
             return None
+        if (
+            distance_between(
+                furthest_creep_pos, self.world.entities[building_id].origin
+            )
+            > 1000
+        ):
+            return None
+        if hasattr(hero, "ability_affecting_buildings"):
+            ability = hero.info.find_ability_by_name(hero.ability_affecting_buildings)
+            if hero.can_cast_ability(ability):
+                return CastTargetUnitCommand(
+                    ability=ability.ability_index, target=building_id
+                )
         return AttackCommand(target=building_id)
 
     def farm(self, hero: Hero) -> Command | None:

@@ -1,3 +1,5 @@
+import random
+
 from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
@@ -94,3 +96,21 @@ class Juggernaut(Hero):
             return CastNoTargetCommand(ability=fury.ability_index)
 
         return AttackCommand(target=target_id)
+
+    def push_lane_with_abilities(
+        self, world: World, nearest_creep_ids: list[str]
+    ) -> Command | None:
+        if self.info is None:
+            # hero is dead
+            return None
+
+        fury = self.info.find_ability_by_name("juggernaut_blade_fury")
+        if self.can_cast_ability(fury) and random.random() < 0.2:
+            return CastNoTargetCommand(ability=fury.ability_index)
+
+        ward = self.info.find_ability_by_name("juggernaut_healing_ward")
+        if self.can_cast_ability(ward) and random.random() < 0.1:
+            x, y, z = self.info.origin
+            return CastTargetAreaCommand(ability=ward.ability_index, x=x, y=y, z=z)
+
+        return None

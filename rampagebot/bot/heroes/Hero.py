@@ -39,6 +39,11 @@ class Hero:
     def fight(self, world: World) -> Command | None:
         raise NotImplementedError("Should be overridden in child classes")
 
+    def push_lane_with_abilities(
+        self, world: World, nearest_creep_ids: list[str]
+    ) -> Command | None:
+        raise NotImplementedError("Should be overridden in child classes")
+
     def can_cast_ability(self, ability: Ability) -> bool:
         return (
             self.info is not None

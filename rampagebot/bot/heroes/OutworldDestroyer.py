@@ -1,3 +1,5 @@
+import random
+
 from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
@@ -95,3 +97,18 @@ class OutworldDestroyer(Hero):
             return CastTargetUnitCommand(ability=orb.ability_index, target=target_id)
 
         return AttackCommand(target=target_id)
+
+    def push_lane_with_abilities(
+        self, world: World, nearest_creep_ids: list[str]
+    ) -> Command | None:
+        if self.info is None:
+            # hero is dead
+            return None
+
+        orb = self.info.find_ability_by_name("obsidian_destroyer_arcane_orb")
+        if self.can_cast_ability(orb) and random.random() < 0.2:
+            return CastTargetUnitCommand(
+                ability=orb.ability_index, target=nearest_creep_ids[0]
+            )
+
+        return None

@@ -2,6 +2,7 @@ from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
 from rampagebot.models.Commands import AttackCommand, CastTargetUnitCommand, Command
+from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
@@ -69,7 +70,7 @@ class Lion(Hero):
         target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
         if target is None:
             return None
-        target_id, target_entity, _ = target
+        target_id, _, _ = target
 
         if self.can_cast_ability(hex):
             return CastTargetUnitCommand(ability=hex.ability_index, target=target_id)
@@ -86,3 +87,28 @@ class Lion(Hero):
             )
 
         return AttackCommand(target=target_id)
+
+    def push_lane_with_abilities(
+        self, world: World, nearest_creep_ids: list[str]
+    ) -> Command | None:
+        if self.info is None:
+            # hero is dead
+            return None
+
+        spike = self.info.find_ability_by_name("lion_impale")
+        if self.can_cast_ability(spike) and len(nearest_creep_ids) > 1:
+            return CastTargetUnitCommand(
+                ability=spike.ability_index, target=nearest_creep_ids[0]
+            )
+
+        mana_drain = self.info.find_ability_by_name("lion_mana_drain")
+        if self.can_cast_ability(mana_drain):
+            for creep_id in nearest_creep_ids:
+                creep = world.entities[creep_id]
+                assert isinstance(creep, EntityBaseNPC)
+                if creep.mana > 0:
+                    return CastTargetUnitCommand(
+                        ability=mana_drain.ability_index, target=creep_id
+                    )
+
+        return None

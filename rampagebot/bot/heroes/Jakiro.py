@@ -1,3 +1,7 @@
+import random
+
+import numpy as np
+
 from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
@@ -62,6 +66,7 @@ class Jakiro(Hero):
             ability_3="jakiro_liquid_fire",
             ability_4="jakiro_macropyre",
         )
+        self.ability_affecting_buildings = "jakiro_liquid_fire"
 
     def fight(self, world: World) -> Command | None:
         if self.info is None:
@@ -96,3 +101,25 @@ class Jakiro(Hero):
             )
 
         return AttackCommand(target=target_id)
+
+    def push_lane_with_abilities(
+        self, world: World, nearest_creep_ids: list[str]
+    ) -> Command | None:
+        if self.info is None:
+            # hero is dead
+            return None
+
+        creep_positions = [world.entities[cid].origin for cid in nearest_creep_ids]
+
+        breath = self.info.find_ability_by_name("jakiro_dual_breath")
+        if self.can_cast_ability(breath) and random.random() < 0.25:
+            x, y, z = np.array(creep_positions).mean(axis=0)
+            return CastTargetPointCommand(ability=breath.ability_index, x=x, y=y, z=z)
+
+        liquid_fire = self.info.find_ability_by_name("jakiro_liquid_fire")
+        if self.can_cast_ability(liquid_fire):
+            return CastTargetUnitCommand(
+                ability=liquid_fire.ability_index, target=nearest_creep_ids[0]
+            )
+
+        return None

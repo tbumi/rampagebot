@@ -87,7 +87,7 @@ async def send_settings() -> Settings | Response:
     }
     if hasattr(app.state, "rl_class"):
         app.state.episode_id = app.state.rl_class.start_episode()
-    print(f"{app.state.episode_id=}")
+        print(f"{app.state.episode_id=}")
     app.state.last_observation = {}
     app.state.game_ended = False
 
@@ -121,7 +121,10 @@ async def game_update_endpoint(
 
     for team in TeamName:
         bot: SmartBot = app.state.bots[team]
-        bot.world = World(entities=getattr(game_update, f"{team.value}_entities"))
+        bot.world = World(
+            entities=getattr(game_update, f"{team.value}_entities"),
+            game_time=game_update.game_time,
+        )
         for hero in bot.heroes:
             hero.info = bot.world.find_player_hero_entity(hero.name)
 

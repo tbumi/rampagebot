@@ -1,3 +1,5 @@
+import numpy as np
+
 from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
@@ -7,6 +9,7 @@ from rampagebot.models.Commands import (
     CastTargetUnitCommand,
     Command,
 )
+from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
@@ -21,14 +24,14 @@ class Viper(Hero):
             ability_build=[
                 "viper_poison_attack",
                 "viper_corrosive_skin",
-                "viper_poison_attack",
+                "viper_nethertoxin",
                 "viper_corrosive_skin",
                 "viper_poison_attack",
                 "viper_viper_strike",
+                "viper_corrosive_skin",
                 "viper_poison_attack",
-                "viper_nethertoxin",
                 "viper_corrosive_skin",
-                "viper_corrosive_skin",
+                "viper_poison_attack",
                 "special_bonus_unique_viper_4",  # +4% Poison Attack Magic Res Reduction
                 "viper_viper_strike",
                 "viper_nethertoxin",
@@ -91,8 +94,48 @@ class Viper(Hero):
             return CastTargetUnitCommand(ability=strike.ability_index, target=target_id)
 
         if self.can_cast_ability(poison_atk):
-            return CastTargetUnitCommand(
-                ability=poison_atk.ability_index, target=target_id
-            )
+            full_stacked = False
+            for m in target_entity.modifiers:
+                if m.name == "modifier_viper_poison_attack_slow" and m.stack_count >= 6:
+                    full_stacked = True
+                    break
+            if not full_stacked:
+                return CastTargetUnitCommand(
+                    ability=poison_atk.ability_index, target=target_id
+                )
 
         return AttackCommand(target=target_id)
+
+    def push_lane_with_abilities(
+        self, world: World, nearest_creep_ids: list[str]
+    ) -> Command | None:
+        if self.info is None:
+            # hero is dead
+            return None
+
+        creep_positions = [world.entities[cid].origin for cid in nearest_creep_ids]
+
+        toxin = self.info.find_ability_by_name("viper_nethertoxin")
+        if self.can_cast_ability(toxin):
+            x, y, z = np.array(creep_positions).mean(axis=0)
+            return CastTargetAreaCommand(ability=toxin.ability_index, x=x, y=y, z=z)
+
+        poison_atk = self.info.find_ability_by_name("viper_poison_attack")
+        if self.can_cast_ability(poison_atk):
+            poison_stack_counts = {}
+            for creep_id in nearest_creep_ids:
+                creep = world.entities[creep_id]
+                assert isinstance(creep, EntityBaseNPC)
+                for m in creep.modifiers:
+                    if m.name == "modifier_viper_poison_attack_slow":
+                        if m.stack_count <= 6:
+                            poison_stack_counts[creep_id] = m.stack_count
+                        break
+                else:
+                    poison_stack_counts[creep_id] = 0
+            return CastTargetUnitCommand(
+                ability=poison_atk.ability_index,
+                target=min(poison_stack_counts, key=lambda x: poison_stack_counts[x]),
+            )
+
+        return None
