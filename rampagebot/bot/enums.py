@@ -13,9 +13,6 @@ class LanePosition(Enum):
     BOTTOM = "bot"
 
 
-# TODO save lanes as offlane/safe lane instead of top/bot
-
-
 class Role(Enum):
     CARRY = "carry"
     SUPPORT = "support"
