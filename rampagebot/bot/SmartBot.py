@@ -1,12 +1,14 @@
 import json
+import re
 from typing import cast
 
 from rampagebot.bot.constants import BOT_LEFT, SECRET_SHOP_ITEMS, TOP_RIGHT
+from rampagebot.bot.enums import LanePosition
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import (
+    TeamName_to_goodbad,
     distance_between,
     effective_damage,
-    find_closest_safepoint,
     find_closest_tree_id,
     find_furthest_friendly_creep_in_lane,
     find_nearest_creeps,
@@ -26,6 +28,7 @@ from rampagebot.models.Commands import (
     TpScrollCommand,
     UseItemCommand,
 )
+from rampagebot.models.dota.BaseNPC import BaseNPC
 from rampagebot.models.dota.EntityCourier import EntityCourier
 from rampagebot.models.TeamName import TeamName, enemy_team
 from rampagebot.models.World import World
@@ -205,6 +208,8 @@ class SmartBot:
             else:
                 next_action = GymAction(next_action_number)
                 # print(f"{agent_name}: {next_action}")
+                if next_action != GymAction.RETREAT:
+                    hero.retreat_current_tower_tier = 0
                 if next_action == GymAction.FARM:
                     next_command = self.farm(hero)
                 elif next_action == GymAction.PUSH:
@@ -353,16 +358,50 @@ class SmartBot:
     def retreat(self, hero: Hero) -> Command:
         assert self.world is not None
         assert hero.info is not None
+        team = TeamName_to_goodbad(self.team)
+
+        fountain = self.world.find_building_entity(f"ent_dota_fountain_{team}")
+        assert fountain is not None
 
         if (
             hero.info.health / hero.info.max_health < 0.1
             and hero.info.tp_scroll_available
         ):
-            own_fountain = BOT_LEFT if self.team == TeamName.RADIANT else TOP_RIGHT
-            return TpScrollCommand.to(own_fountain)
+            return TpScrollCommand.to(fountain.origin)
 
-        retreat_dest = find_closest_safepoint(self.team, self.world, hero)
-        return MoveCommand.to(retreat_dest.origin)
+        distances: list[tuple[BaseNPC, float]] = []
+        distances.append(
+            (fountain, distance_between(hero.info.origin, fountain.origin))
+        )
+
+        for lane in LanePosition:
+            for tier in range(1, 5):
+                tower = self.world.find_tower_entity(
+                    f"dota_{team}guys_tower{tier}_{lane.value}"
+                )
+                if tower is not None:
+                    distance = distance_between(hero.info.origin, tower.origin)
+                    if distance < 200:
+                        hero.retreat_current_tower_tier = tier
+                        continue
+                    distances.append((tower, distance))
+
+        distances.sort(key=lambda x: x[1])
+        destination = None
+        for candidate, _ in distances:
+            if match := re.fullmatch(f"dota_{team}guys_tower(.)_(.+)", candidate.name):
+                # the candidate is a tower
+                destination_tier = int(match.group(1))
+                if destination_tier > hero.retreat_current_tower_tier:
+                    # tower's tier is closer to base than current, move there
+                    destination = candidate
+                    break
+            else:
+                # other towers are further than fountain, of course move there
+                destination = candidate
+                break
+        assert destination is not None
+        return MoveCommand.to(destination.origin)
 
     def adjust_inventory_order(self, hero: Hero) -> Command | None:
         assert hero.info is not None

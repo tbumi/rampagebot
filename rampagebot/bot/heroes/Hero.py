@@ -31,6 +31,7 @@ class Hero:
     info: EntityPlayerHero | None = None
 
     has_had_aggro_for_ticks: int = 0
+    retreat_current_tower_tier: int = 0
 
     # these vars are for calculating RL rewards
     unrewarded: Rewards = field(default_factory=Rewards)
