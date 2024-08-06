@@ -44,6 +44,10 @@ class TpScrollCommand(BaseModel):
     y: float
     z: float
 
+    @classmethod
+    def to(cls, target: Vector) -> "TpScrollCommand":
+        return cls(x=target[0], y=target[1], z=target[2])
+
 
 class BuyCommand(BaseModel):
     command: Literal["BUY"] = "BUY"

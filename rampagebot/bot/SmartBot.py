@@ -24,6 +24,7 @@ from rampagebot.models.Commands import (
     LevelUpCommand,
     MoveCommand,
     SwapItemSlotsCommand,
+    TpScrollCommand,
     UseItemCommand,
 )
 from rampagebot.models.dota.BaseEntity import BaseEntity
@@ -189,6 +190,14 @@ class SmartBot:
                     hero.courier_going_to_secret_shop = True
                     continue
 
+            if (
+                hero.info.tp_scroll_charges == 0
+                and hero.info.gold > self.items_data["tpscroll"]["cost"]
+                and hero.is_in_range_of_shop(next_item, courier)
+            ):
+                commands.append({hero.name: BuyCommand(item="item_tpscroll")})
+                continue
+
             agent_name = f"{self.team.value}_{i+1}"
             next_action_number = actions.get(
                 agent_name, self.last_issued_actions.get(agent_name)
@@ -226,6 +235,11 @@ class SmartBot:
         if furthest_creep_id is None:
             return None
         furthest_creep_pos = self.world.entities[furthest_creep_id].origin
+        if (
+            distance_between(hero.info.origin, furthest_creep_pos) > 5000
+            and hero.info.tp_scroll_available
+        ):
+            return TpScrollCommand.to(furthest_creep_pos)
         if distance_between(hero.info.origin, furthest_creep_pos) > 500:
             return MoveCommand.to(furthest_creep_pos)
 
@@ -288,6 +302,11 @@ class SmartBot:
         if furthest_creep_id is None:
             return None
         furthest_creep_pos = self.world.entities[furthest_creep_id].origin
+        if (
+            distance_between(hero.info.origin, furthest_creep_pos) > 5000
+            and hero.info.tp_scroll_available
+        ):
+            return TpScrollCommand.to(furthest_creep_pos)
         if distance_between(hero.info.origin, furthest_creep_pos) > 700:
             return MoveCommand.to(furthest_creep_pos)
 
@@ -336,6 +355,14 @@ class SmartBot:
     def retreat(self, hero: Hero) -> Command:
         assert self.world is not None
         assert hero.info is not None
+
+        if (
+            hero.info.health / hero.info.max_health < 0.1
+            and hero.info.tp_scroll_available
+        ):
+            own_fountain = BOT_LEFT if self.team == TeamName.RADIANT else TOP_RIGHT
+            return TpScrollCommand.to(own_fountain)
+
         retreat_dest: BaseEntity | None = find_closest_tower(
             self.team, self.world, hero
         )
