@@ -101,6 +101,44 @@ class SmartBot:
                     {hero.name: UseItemCommand(slot=items["item_enchanted_mango"])}
                 )
                 continue
+            if "item_magic_stick" in items and (
+                hero.info.health / hero.info.max_health < 0.2
+                or hero.info.mana / hero.info.max_mana < 0.2
+            ):
+                magic_stick = hero.info.items[items["item_magic_stick"]]
+                assert magic_stick is not None
+                if magic_stick.charges > 0:
+                    commands.append(
+                        {hero.name: UseItemCommand(slot=items["item_magic_stick"])}
+                    )
+                    continue
+            if "item_magic_wand" in items and (
+                hero.info.health / hero.info.max_health < 0.2
+                or hero.info.mana / hero.info.max_mana < 0.2
+            ):
+                magic_wand = hero.info.items[items["item_magic_wand"]]
+                assert magic_wand is not None
+                if magic_wand.charges > 0:
+                    commands.append(
+                        {hero.name: UseItemCommand(slot=items["item_magic_wand"])}
+                    )
+                    continue
+            if "item_arcane_boots" in items and (
+                hero.info.max_mana - hero.info.mana
+            ) > float(
+                [
+                    i["value"]
+                    for i in self.items_data["arcane_boots"]["attrib"]
+                    if i["key"] == "replenish_amount"
+                ][0]
+            ):
+                arcane_boots = hero.info.items[items["item_arcane_boots"]]
+                assert arcane_boots is not None
+                if arcane_boots.cooldown_time_remaining == 0:
+                    commands.append(
+                        {hero.name: UseItemCommand(slot=items["item_arcane_boots"])}
+                    )
+                    continue
 
             if len(hero.ability_build) > 0 and hero.info.ability_points > 0:
                 next_ability_name = hero.ability_build.pop(0)
