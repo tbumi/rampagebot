@@ -10,10 +10,9 @@ from rampagebot.bot.utils import (
     find_closest_tower,
     find_closest_tree_id,
     find_furthest_friendly_creep_in_lane,
-    find_nearest_enemy_creeps,
+    find_nearest_creeps,
     find_next_push_target,
     lane_assignment_to_pos,
-    point_at_distance,
 )
 from rampagebot.models.Commands import (
     AttackCommand,
@@ -234,28 +233,28 @@ class SmartBot:
             # de-aggro by attacking friendly creep
             return AttackCommand(target=furthest_creep_id)
 
-        creeps = find_nearest_enemy_creeps(
-            furthest_creep_pos,
+        nearest_enemy_creeps = find_nearest_creeps(
             self.world,
-            self.team,
+            furthest_creep_pos,
+            creep_team=enemy_team(self.team),
             max_num_of_creeps=3,
             distance_limit=800,
         )
-        if creeps:
-            nearest_creep_ids = [cid for cid, _, _ in creeps]
-            command = hero.push_lane_with_abilities(self.world, nearest_creep_ids)
+        if len(nearest_enemy_creeps) > 0:
+            command = hero.push_lane_with_abilities(
+                self.world, [cid for cid, _ in nearest_enemy_creeps]
+            )
             if command is not None:
                 return command
 
+            nearest_creep_id, nearest_creep_entity = nearest_enemy_creeps[0]
             if (
-                distance_between(
-                    hero.info.origin, self.world.entities[nearest_creep_ids[0]].origin
-                )
+                distance_between(hero.info.origin, nearest_creep_entity.origin)
                 > hero.info.attack_range
             ):
-                return MoveCommand.to(self.world.entities[nearest_creep_ids[0]].origin)
+                return MoveCommand.to(nearest_creep_entity.origin)
 
-            return AttackCommand(target=nearest_creep_ids[0])
+            return AttackCommand(target=nearest_creep_id)
 
         building_id = find_next_push_target(
             enemy_team(self.team),
@@ -292,27 +291,47 @@ class SmartBot:
         if distance_between(hero.info.origin, furthest_creep_pos) > 700:
             return MoveCommand.to(furthest_creep_pos)
 
-        creep_wave = find_nearest_enemy_creeps(
-            hero.info.origin, self.world, self.team, 10
+        nearest_enemy_creeps = find_nearest_creeps(
+            self.world,
+            hero.info.origin,
+            creep_team=enemy_team(self.team),
+            max_num_of_creeps=10,
+            distance_limit=700,
         )
-        if not creep_wave:
-            return None
-        creep_with_lowest_health_id, creep_with_lowest_health, _ = min(
-            creep_wave, key=lambda c: c[1].health
+        if len(nearest_enemy_creeps) > 0:
+            creep_with_lowest_health_id, creep_with_lowest_health_entity = min(
+                nearest_enemy_creeps, key=lambda c: c[1].health
+            )
+
+            if creep_with_lowest_health_entity.health < (
+                effective_damage(
+                    hero.info.attack_damage, creep_with_lowest_health_entity.armor
+                )
+                * 1.1
+            ):
+                return AttackCommand(target=creep_with_lowest_health_id)
+
+        nearest_friendly_creeps = find_nearest_creeps(
+            self.world,
+            hero.info.origin,
+            creep_team=self.team,
+            max_num_of_creeps=10,
+            distance_limit=700,
         )
+        if len(nearest_friendly_creeps) > 0:
+            creep_with_lowest_health_id, creep_with_lowest_health_entity = min(
+                nearest_friendly_creeps, key=lambda c: c[1].health
+            )
 
-        if creep_with_lowest_health.health < (
-            effective_damage(hero.info.attack_damage, creep_with_lowest_health.armor)
-            * 1.1
-        ):
-            return AttackCommand(target=creep_with_lowest_health_id)
+            if creep_with_lowest_health_entity.health < (
+                effective_damage(
+                    hero.info.attack_damage, creep_with_lowest_health_entity.armor
+                )
+                * 1.1
+            ):
+                return AttackCommand(target=creep_with_lowest_health_id)
 
-        own_fountain = BOT_LEFT if self.team == TeamName.RADIANT else TOP_RIGHT
-        attack_range_distance = point_at_distance(
-            creep_with_lowest_health.origin, own_fountain, hero.info.attack_range
-        )
-
-        return MoveCommand.to(attack_range_distance)
+        return None
 
     def retreat(self, hero: Hero) -> Command:
         assert self.world is not None

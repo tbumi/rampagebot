@@ -65,26 +65,28 @@ def is_left_of_line(startLine: Vector, endLine: Vector, target: Vector) -> bool:
     ) > 0
 
 
-def find_nearest_enemy_creeps(
-    origin_location: Vector,
+def find_nearest_creeps(
     world: World,
-    own_team: TeamName,
+    origin_location: Vector,
+    *,
+    creep_team: TeamName,
     max_num_of_creeps: int,
-    distance_limit: float = 800,
-) -> list[tuple[str, EntityBaseNPC, float]]:
+    distance_limit: float,
+) -> list[tuple[str, EntityBaseNPC]]:
     candidates: list[tuple[str, EntityBaseNPC, float]] = []
     for id_, entity in world.entities.items():
         if (
             isinstance(entity, EntityBaseNPC)
             and entity.name in ("npc_dota_creep_lane", "npc_dota_creep_siege")
-            and entity.team != TeamName_to_DOTATeam(own_team)
+            and entity.team == TeamName_to_DOTATeam(creep_team)
             and entity.alive
         ):
             distance_to_entity = distance_between(origin_location, entity.origin)
             if distance_to_entity < distance_limit:
                 candidates.append((id_, entity, distance_to_entity))
 
-    return sorted(candidates, key=lambda x: x[2])[:max_num_of_creeps]
+    candidates.sort(key=lambda x: x[2])
+    return [(c, ce) for c, ce, _ in candidates[:max_num_of_creeps]]
 
 
 def find_furthest_friendly_creep_in_lane(
