@@ -4,9 +4,9 @@ from rampagebot.bot.constants import BOT_LEFT, MID_LEFT, MID_RIGHT, TOP_RIGHT
 from rampagebot.bot.enums import LaneAssignment, LanePosition
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.models.dota.BaseEntity import Vector
+from rampagebot.models.dota.BaseNPC import BaseNPC
 from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
 from rampagebot.models.dota.EntityHero import EntityHero
-from rampagebot.models.dota.EntityTower import EntityTower
 from rampagebot.models.dota.EntityTree import EntityTree
 from rampagebot.models.dota.enums.DOTATeam import DOTATeam
 from rampagebot.models.TeamName import TeamName
@@ -183,23 +183,26 @@ def find_next_push_target(
     return None
 
 
-def find_closest_tower(
-    team_name: TeamName, world: World, hero: Hero
-) -> EntityTower | None:
+def find_closest_safepoint(team_name: TeamName, world: World, hero: Hero) -> BaseNPC:
     assert hero.info is not None
     team = TeamName_to_goodbad(team_name)
-    distances: list[tuple[EntityTower, float]] = []
+
+    distances: list[tuple[BaseNPC, float]] = []
+    fountain = world.find_building_entity(f"ent_dota_fountain_{team}")
+    assert fountain is not None
+    distances.append((fountain, distance_between(hero.info.origin, fountain.origin)))
+
     for lane in LanePosition:
-        for tier in range(1, 5):
+        # don't count tower tier 4 as it's better to retreat to fountain
+        for tier in range(1, 4):
             tower = world.find_tower_entity(f"dota_{team}guys_tower{tier}_{lane.value}")
             if tower is not None:
                 distances.append(
                     (tower, distance_between(hero.info.origin, tower.origin))
                 )
-    if distances:
-        distances.sort(key=lambda x: x[1])
-        return distances[0][0]
-    return None
+
+    distances.sort(key=lambda x: x[1])
+    return distances[0][0]
 
 
 def find_closest_tree_id(world: World, location: Vector) -> str | None:

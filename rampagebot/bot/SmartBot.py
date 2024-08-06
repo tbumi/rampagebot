@@ -4,10 +4,9 @@ from typing import cast
 from rampagebot.bot.constants import BOT_LEFT, SECRET_SHOP_ITEMS, TOP_RIGHT
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import (
-    TeamName_to_goodbad,
     distance_between,
     effective_damage,
-    find_closest_tower,
+    find_closest_safepoint,
     find_closest_tree_id,
     find_furthest_friendly_creep_in_lane,
     find_nearest_creeps,
@@ -27,7 +26,6 @@ from rampagebot.models.Commands import (
     TpScrollCommand,
     UseItemCommand,
 )
-from rampagebot.models.dota.BaseEntity import BaseEntity
 from rampagebot.models.dota.EntityCourier import EntityCourier
 from rampagebot.models.TeamName import TeamName, enemy_team
 from rampagebot.models.World import World
@@ -363,13 +361,7 @@ class SmartBot:
             own_fountain = BOT_LEFT if self.team == TeamName.RADIANT else TOP_RIGHT
             return TpScrollCommand.to(own_fountain)
 
-        retreat_dest: BaseEntity | None = find_closest_tower(
-            self.team, self.world, hero
-        )
-        if retreat_dest is None:
-            team = TeamName_to_goodbad(self.team)
-            retreat_dest = self.world.find_building_entity(f"ent_dota_fountain_{team}")
-            assert retreat_dest is not None
+        retreat_dest = find_closest_safepoint(self.team, self.world, hero)
         return MoveCommand.to(retreat_dest.origin)
 
     def adjust_inventory_order(self, hero: Hero) -> Command | None:
