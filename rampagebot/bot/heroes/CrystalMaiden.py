@@ -75,10 +75,9 @@ class CrystalMaiden(Hero):
         frostbite = self.info.find_ability_by_name("crystal_maiden_frostbite")
         freezing_field = self.info.find_ability_by_name("crystal_maiden_freezing_field")
 
-        target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
-        if target is None:
+        target_id = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
+        if target_id is None:
             return None
-        target_id, target_entity, _ = target
 
         if self.can_cast_ability(frostbite):
             return CastTargetUnitCommand(
@@ -86,7 +85,7 @@ class CrystalMaiden(Hero):
             )
 
         if self.can_cast_ability(nova):
-            x, y, z = target_entity.origin
+            x, y, z = world.entities[target_id].origin
             return CastTargetPointCommand(ability=nova.ability_index, x=x, y=y, z=z)
 
         if self.can_cast_ability(freezing_field):

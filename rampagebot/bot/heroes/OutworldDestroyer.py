@@ -81,16 +81,15 @@ class OutworldDestroyer(Hero):
         )
         sanity = self.info.find_ability_by_name("obsidian_destroyer_sanity_eclipse")
 
-        target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
-        if target is None:
+        target_id = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
+        if target_id is None:
             return None
-        target_id, target_entity, _ = target
 
         if self.can_cast_ability(astral):
             return CastTargetUnitCommand(ability=astral.ability_index, target=target_id)
 
         if self.can_cast_ability(sanity):
-            x, y, z = target_entity.origin
+            x, y, z = world.entities[target_id].origin
             return CastTargetAreaCommand(ability=sanity.ability_index, x=x, y=y, z=z)
 
         if self.can_cast_ability(orb):

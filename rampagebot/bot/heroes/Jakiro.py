@@ -78,12 +78,11 @@ class Jakiro(Hero):
         liquid_fire = self.info.find_ability_by_name("jakiro_liquid_fire")
         macropyre = self.info.find_ability_by_name("jakiro_macropyre")
 
-        target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
-        if target is None:
+        target_id = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
+        if target_id is None:
             return None
-        target_id, target_entity, _ = target
 
-        x, y, z = target_entity.origin
+        x, y, z = world.entities[target_id].origin
         if self.can_cast_ability(ice_path):
             return CastTargetPointCommand(ability=ice_path.ability_index, x=x, y=y, z=z)
 

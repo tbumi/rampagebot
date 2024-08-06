@@ -76,10 +76,9 @@ class Lich(Hero):
         gaze = self.info.find_ability_by_name("lich_sinister_gaze")
         chain_frost = self.info.find_ability_by_name("lich_chain_frost")
 
-        target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
-        if target is None:
+        target_id = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
+        if target_id is None:
             return None
-        target_id, _, _ = target
 
         if self.can_cast_ability(blast):
             return CastTargetUnitCommand(ability=blast.ability_index, target=target_id)

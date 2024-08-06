@@ -67,10 +67,9 @@ class Lion(Hero):
         finger = self.info.find_ability_by_name("lion_finger_of_death")
         mana_drain = self.info.find_ability_by_name("lion_mana_drain")
 
-        target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
-        if target is None:
+        target_id = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
+        if target_id is None:
             return None
-        target_id, _, _ = target
 
         if self.can_cast_ability(hex):
             return CastTargetUnitCommand(ability=hex.ability_index, target=target_id)

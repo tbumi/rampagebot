@@ -77,10 +77,9 @@ class PhantomAssassin(Hero):
         dagger = self.info.find_ability_by_name("phantom_assassin_stifling_dagger")
         strike = self.info.find_ability_by_name("phantom_assassin_phantom_strike")
 
-        target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
-        if target is None:
+        target_id = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
+        if target_id is None:
             return None
-        target_id, _, _ = target
 
         if self.can_cast_ability(dagger):
             return CastTargetUnitCommand(ability=dagger.ability_index, target=target_id)

@@ -81,10 +81,11 @@ class Viper(Hero):
         toxin = self.info.find_ability_by_name("viper_nethertoxin")
         strike = self.info.find_ability_by_name("viper_viper_strike")
 
-        target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
-        if target is None:
+        target_id = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
+        if target_id is None:
             return None
-        target_id, target_entity, _ = target
+        target_entity = world.entities[target_id]
+        assert isinstance(target_entity, EntityBaseNPC)
 
         if self.can_cast_ability(toxin):
             x, y, z = target_entity.origin

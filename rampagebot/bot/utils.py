@@ -120,11 +120,11 @@ def find_furthest_friendly_creep_in_lane(
     own_fountain = BOT_LEFT if hero_team == TeamName.RADIANT else TOP_RIGHT
     if not creep_ids:
         return None
-    furthest_creep = max(
+    furthest_creep_id = max(
         creep_ids,
         key=lambda id_: distance_between(own_fountain, world.entities[id_].origin),
     )
-    return furthest_creep
+    return furthest_creep_id
 
 
 def find_nearest_enemy_hero(
@@ -132,8 +132,8 @@ def find_nearest_enemy_hero(
     world: World,
     own_team: TeamName,
     distance_limit: float,
-) -> tuple[str, EntityHero, float] | None:
-    candidates: list[tuple[str, EntityHero, float]] = []
+) -> str | None:
+    candidates: list[tuple[str, float]] = []
     for id_, entity in world.entities.items():
         if (
             isinstance(entity, EntityHero)
@@ -142,12 +142,12 @@ def find_nearest_enemy_hero(
         ):
             distance_to_entity = distance_between(origin_location, entity.origin)
             if distance_to_entity < distance_limit:
-                candidates.append((id_, entity, distance_to_entity))
+                candidates.append((id_, distance_to_entity))
 
     if len(candidates) == 0:
         return None
 
-    return sorted(candidates, key=lambda x: x[2])[0]
+    return min(candidates, key=lambda x: x[1])[0]
 
 
 def effective_damage(damage: float, armor: float) -> float:

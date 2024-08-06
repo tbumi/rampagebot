@@ -82,10 +82,11 @@ class Sniper(Hero):
         take_aim = self.info.find_ability_by_name("sniper_take_aim")
         assassinate = self.info.find_ability_by_name("sniper_assassinate")
 
-        target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
-        if target is None:
+        target_id = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
+        if target_id is None:
             return None
-        target_id, target_entity, _ = target
+        target_entity = world.entities[target_id]
+        assert isinstance(target_entity, EntityBaseNPC)
 
         # as of patch 7.37
         assassinate_damage = {1: 300, 2: 400, 3: 500}
