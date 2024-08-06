@@ -167,6 +167,18 @@ class SmartBot:
                     commands.append({hero.name: BuyCommand(item=f"item_{next_item}")})
                     continue
 
+            if (
+                hero.info.tp_scroll_charges == 0
+                and not any(
+                    item is not None and item.name == "item_tpscroll"
+                    for item in courier.items.values()
+                )
+                and hero.info.gold > self.items_data["tpscroll"]["cost"]
+                and hero.is_in_range_of_shop(next_item, courier)
+            ):
+                commands.append({hero.name: BuyCommand(item="item_tpscroll")})
+                continue
+
             if courier is not None:
                 if (
                     hero.courier_going_to_secret_shop
@@ -190,14 +202,6 @@ class SmartBot:
                     commands.append({hero.name: CourierSecretShopCommand()})
                     hero.courier_going_to_secret_shop = True
                     continue
-
-            if (
-                hero.info.tp_scroll_charges == 0
-                and hero.info.gold > self.items_data["tpscroll"]["cost"]
-                and hero.is_in_range_of_shop(next_item, courier)
-            ):
-                commands.append({hero.name: BuyCommand(item="item_tpscroll")})
-                continue
 
             agent_name = f"{self.team.value}_{i+1}"
             next_action_number = actions.get(
@@ -241,6 +245,7 @@ class SmartBot:
         if (
             distance_between(hero.info.origin, furthest_creep_pos) > 5000
             and hero.info.tp_scroll_available
+            and hero.info.mana > self.items_data["tpscroll"]["mc"]
         ):
             return TpScrollCommand.to(furthest_creep_pos)
         if distance_between(hero.info.origin, furthest_creep_pos) > 500:
@@ -308,6 +313,7 @@ class SmartBot:
         if (
             distance_between(hero.info.origin, furthest_creep_pos) > 5000
             and hero.info.tp_scroll_available
+            and hero.info.mana > self.items_data["tpscroll"]["mc"]
         ):
             return TpScrollCommand.to(furthest_creep_pos)
         if distance_between(hero.info.origin, furthest_creep_pos) > 700:
@@ -362,17 +368,18 @@ class SmartBot:
 
         fountain = self.world.find_building_entity(f"ent_dota_fountain_{team}")
         assert fountain is not None
+        distance_to_fountain = distance_between(hero.info.origin, fountain.origin)
 
         if (
             hero.info.health / hero.info.max_health < 0.1
             and hero.info.tp_scroll_available
+            and hero.info.mana > self.items_data["tpscroll"]["mc"]
+            and distance_to_fountain > 5000
         ):
             return TpScrollCommand.to(fountain.origin)
 
         distances: list[tuple[BaseNPC, float]] = []
-        distances.append(
-            (fountain, distance_between(hero.info.origin, fountain.origin))
-        )
+        distances.append((fountain, distance_to_fountain))
 
         for lane in LanePosition:
             for tier in range(1, 5):
