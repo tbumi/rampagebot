@@ -108,7 +108,7 @@ class SmartBot:
             ):
                 magic_stick = hero.info.items[items["item_magic_stick"]]
                 assert magic_stick is not None
-                if magic_stick.charges > 0:
+                if magic_stick.charges > 0 and magic_stick.cooldown_time_remaining == 0:
                     commands.append(
                         {hero.name: UseItemCommand(slot=items["item_magic_stick"])}
                     )
@@ -119,7 +119,7 @@ class SmartBot:
             ):
                 magic_wand = hero.info.items[items["item_magic_wand"]]
                 assert magic_wand is not None
-                if magic_wand.charges > 0:
+                if magic_wand.charges > 0 and magic_wand.cooldown_time_remaining == 0:
                     commands.append(
                         {hero.name: UseItemCommand(slot=items["item_magic_wand"])}
                     )
