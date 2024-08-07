@@ -10,6 +10,7 @@ from rampagebot.models.Commands import (
     CastTargetPointCommand,
     CastTargetUnitCommand,
     Command,
+    UseItemCommand,
 )
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
@@ -85,6 +86,11 @@ class Jakiro(Hero):
         x, y, z = world.entities[target_id].origin
         if self.can_cast_ability(ice_path):
             return CastTargetPointCommand(ability=ice_path.ability_index, x=x, y=y, z=z)
+
+        for i in self.info.items.values():
+            if i is not None and i.name == "item_blood_grenade":
+                x, y, z = world.entities[target_id].origin
+                return UseItemCommand(slot=i.slot, x=x, y=y, z=z)
 
         if self.can_cast_ability(macropyre):
             return CastTargetPointCommand(

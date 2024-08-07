@@ -3,7 +3,12 @@ import random
 from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.heroes.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
-from rampagebot.models.Commands import AttackCommand, CastTargetUnitCommand, Command
+from rampagebot.models.Commands import (
+    AttackCommand,
+    CastTargetUnitCommand,
+    Command,
+    UseItemCommand,
+)
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
@@ -82,6 +87,11 @@ class Lich(Hero):
 
         if self.can_cast_ability(blast):
             return CastTargetUnitCommand(ability=blast.ability_index, target=target_id)
+
+        for i in self.info.items.values():
+            if i is not None and i.name == "item_blood_grenade":
+                x, y, z = world.entities[target_id].origin
+                return UseItemCommand(slot=i.slot, x=x, y=y, z=z)
 
         if self.can_cast_ability(chain_frost):
             return CastTargetUnitCommand(
