@@ -6,6 +6,7 @@ from rampagebot.models.Commands import (
     CastNoTargetCommand,
     CastTargetUnitCommand,
     Command,
+    UseItemCommand,
 )
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
@@ -84,6 +85,16 @@ class SpiritBreaker(Hero):
 
         if self.can_cast_ability(bulldoze):
             return CastNoTargetCommand(ability=bulldoze.ability_index)
+
+        for i in self.info.items.values():
+            if (
+                i is not None
+                and i.name == "item_invis_sword"
+                and i.cooldown_time_remaining == 0
+                # TODO: dynamically get the mana cost of shadow blade
+                and self.info.mana > 75
+            ):
+                return UseItemCommand(slot=i.slot)
 
         if self.can_cast_ability(nether_strike):
             return CastTargetUnitCommand(
