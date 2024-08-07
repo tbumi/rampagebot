@@ -24,6 +24,7 @@ from rampagebot.models.GameUpdate import GameUpdate
 from rampagebot.models.Settings import Settings
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
+from rampagebot.rl import match_tracker
 from rampagebot.rl.functions import (
     assign_final_rewards,
     assign_rewards,
@@ -97,7 +98,7 @@ async def send_settings() -> Settings | Response:
         grant_global_vision=False,
         spectator_mode=True,
         auto_restart_client_on_server_restart=True,
-        max_game_duration=180,  # in minutes
+        max_game_duration=120,  # in minutes
         radiant_party_names=[
             hero.name for hero in app.state.bots[TeamName.RADIANT].heroes
         ],
@@ -113,7 +114,7 @@ async def game_update_endpoint(
     if app.state.game_ended:
         return []
 
-    if game_update.update_count % 10 == 0:
+    if game_update.update_count % 9 == 0:
         dir_path = Path("./json_samples")
         dir_path.mkdir(parents=True, exist_ok=True)
         with open(dir_path / "game_update.json", "wb") as f:
@@ -173,6 +174,8 @@ async def game_ended(game_end_stats: GameEndStatistics) -> None:
         app.state.rl_class.log_returns(app.state.episode_id, rewards)
 
         app.state.rl_class.end_episode(app.state.episode_id, app.state.last_observation)
+        match_tracker.end_match(game_end_stats.winner)
+        print(f"{match_tracker.match_info}")
 
     end_stats = game_end_stats.model_dump(mode="json")
     if hasattr(app.state, "episode_id"):

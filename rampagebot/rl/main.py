@@ -8,8 +8,10 @@ from ray.rllib.examples._old_api_stack.policy.random_policy import RandomPolicy
 from ray.rllib.policy.policy import PolicySpec
 from ray.tune.logger import pretty_print
 
+from rampagebot.models.TeamName import TeamName
 from rampagebot.rl.callback import TrainingCallback
 from rampagebot.rl.env import RampageBotEnv
+from rampagebot.rl.match_tracker import init_match
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -26,21 +28,26 @@ def main():
     def policy_mapping(agent_id, episode, *args, **kwargs):
         print(f"{episode.episode_id=}")
         if episode.episode_id % 2 == 0:
+            init_match(episode.episode_id, TeamName.RADIANT, 0)
             if agent_id.startswith("radiant"):
                 return "main"
             else:
                 return "random"
         else:
+            init_match(episode.episode_id, TeamName.DIRE, 0)
             if agent_id.startswith("dire"):
                 return "main"
             else:
                 return "random"
 
+    root_dir = Path("/home/traphole/code/rampagebot_results")
+    datestr = datetime.now().strftime("%Y%m%d_%H%M")
+    checkpoint_dir_path = root_dir / datestr
+    checkpoint_dir_path.mkdir(parents=True, exist_ok=True)
+
     config = (
         DQNConfig()
-        .environment(
-            env=RampageBotEnv,
-        )
+        .environment(env=RampageBotEnv)
         .framework("torch")
         .env_runners(
             num_env_runners=0,
@@ -54,30 +61,25 @@ def main():
             policy_mapping_fn=policy_mapping,
             policies_to_train=["main"],
         )
-        .callbacks(TrainingCallback)
+        .callbacks(lambda: TrainingCallback(checkpoint_dir_path))
         .debugging(log_level="INFO")
     )
 
     algo = config.build()
 
-    root_dir = Path("/home/traphole/code/rampagebot_results")
-
     if args.from_checkpoint:
         print(f"Restoring from previous checkpoint: {args.from_checkpoint}")
         algo.restore(str(root_dir / args.from_checkpoint))
 
-    datestr = datetime.now().strftime("%Y%m%d_%H%M")
-    checkpoint_dir_path = root_dir / datestr
-    checkpoint_dir_path.mkdir(parents=True, exist_ok=True)
-    iteration = 0
     while True:
         try:
             result = algo.train()
             checkpoint_dir_str = algo.save(str(checkpoint_dir_path)).checkpoint.path
             print(f"Checkpoint saved in directory {checkpoint_dir_str}")
-            with open(checkpoint_dir_path / f"results_{iteration}.txt", "wt") as f:
+            with open(
+                checkpoint_dir_path / f"train_results_{algo.iteration}.txt", "wt"
+            ) as f:
                 f.write(pretty_print(result))
-            iteration += 1
         except KeyboardInterrupt:
             break
 
