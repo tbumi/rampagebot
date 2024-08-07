@@ -198,6 +198,7 @@ class SmartBot:
                     and hero.item_build[0] in SECRET_SHOP_ITEMS
                     and not hero.courier_going_to_secret_shop
                     and not courier.in_range_of_secret_shop
+                    and not hero.courier_transferring_items
                 ):
                     commands.append({hero.name: CourierSecretShopCommand()})
                     hero.courier_going_to_secret_shop = True
