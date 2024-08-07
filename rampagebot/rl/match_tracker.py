@@ -14,10 +14,13 @@ def count_wins_against(opponent: int) -> tuple[int, int]:
     wins = 0
     matches = 0
     for info in match_info.values():
+        if "match_winner" not in info:
+            # match not done
+            continue
         if info["opponent"] == opponent:
             matches += 1
             print(f"{info=}")
-            if info.get("match_winner") == info["policy"]:
+            if info["match_winner"] == info["policy"]:
                 wins += 1
 
     return matches, wins

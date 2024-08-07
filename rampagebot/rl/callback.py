@@ -28,6 +28,7 @@ class TrainingCallback(DefaultCallbacks):
 
         matches, wins = match_tracker.count_wins_against(self.current_opponent)
         if matches < MIN_MATCH_THRESHOLD:
+            print(f"Iter={algorithm.iteration} -> not enough matches to decide.")
             return
         win_rate = wins / matches
 
