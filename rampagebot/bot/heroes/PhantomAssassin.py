@@ -98,8 +98,8 @@ class PhantomAssassin(Hero):
 
         dagger = self.info.find_ability_by_name("phantom_assassin_stifling_dagger")
         if self.can_cast_ability(dagger):
-            total_dmg = STIFLING_DAGGER_BASE_DMG[self.info.level - 1] + (
-                STIFLING_DAGGER_BONUS_DMG[self.info.level - 1] * self.info.attack_damage
+            total_dmg = STIFLING_DAGGER_BASE_DMG[dagger.level - 1] + (
+                STIFLING_DAGGER_BONUS_DMG[dagger.level - 1] * self.info.attack_damage
             )
             for creep_id in nearest_creep_ids:
                 creep = world.entities[creep_id]

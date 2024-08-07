@@ -11,6 +11,7 @@ from rampagebot.models.Commands import (
     Command,
 )
 from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
+from rampagebot.models.dota.EntityHero import EntityHero
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
@@ -86,7 +87,7 @@ class Sniper(Hero):
         if target_id is None:
             return None
         target_entity = world.entities[target_id]
-        assert isinstance(target_entity, EntityBaseNPC)
+        assert isinstance(target_entity, EntityHero)
 
         # as of patch 7.37
         assassinate_damage = {1: 300, 2: 400, 3: 500}

@@ -10,6 +10,7 @@ from rampagebot.models.Commands import (
     Command,
 )
 from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
+from rampagebot.models.dota.EntityHero import EntityHero
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
@@ -85,7 +86,7 @@ class Viper(Hero):
         if target_id is None:
             return None
         target_entity = world.entities[target_id]
-        assert isinstance(target_entity, EntityBaseNPC)
+        assert isinstance(target_entity, EntityHero)
 
         if self.can_cast_ability(toxin):
             x, y, z = target_entity.origin

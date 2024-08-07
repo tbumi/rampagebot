@@ -174,7 +174,7 @@ class SmartBot:
                     for item in courier.items.values()
                 )
                 and hero.info.gold > self.items_data["tpscroll"]["cost"]
-                and hero.is_in_range_of_shop(next_item, courier)
+                and hero.is_in_range_of_shop("tpscroll", courier)
             ):
                 commands.append({hero.name: BuyCommand(item="item_tpscroll")})
                 continue
