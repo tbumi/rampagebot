@@ -43,8 +43,8 @@ class Sniper(Hero):
                 "special_bonus_attack_speed_30",
                 "sniper_take_aim",
                 "sniper_assassinate",
-                "special_bonus_attack_range_100",
-                "special_bonus_unique_sniper_2",
+                "special_bonus_unique_sniper_shrapnel_damage",  # +30% Shrapnel Damage
+                "special_bonus_unique_sniper_2",  # -30s Shrapnel Charge Restore Time
             ],
             item_build=[
                 "tango",
