@@ -9,11 +9,13 @@ from rampagebot.bot.utils import (
     TeamName_to_goodbad,
     distance_between,
     effective_damage,
+    entity_is_in_range_of_shop,
     find_closest_tree_id,
     find_furthest_friendly_creep_in_lane,
     find_nearest_creeps,
     find_next_push_target,
     lane_assignment_to_pos,
+    player_can_buy_item,
 )
 from rampagebot.models.Commands import (
     AttackCommand,
@@ -158,10 +160,9 @@ class SmartBot:
             courier = cast(EntityCourier, courier)  # only for static type checking
             if len(hero.item_build) > 0:
                 next_item = hero.item_build[0]
-                if (
-                    hero.info.gold > self.items_data[next_item]["cost"]
-                    and hero.is_in_range_of_shop(next_item, courier)
-                    and (hero.has_free_slot(courier) or hero.can_stack_item(next_item))
+                next_item_cost = self.items_data[next_item]["cost"]
+                if hero.info.gold > next_item_cost and player_can_buy_item(
+                    next_item, hero.info, courier
                 ):
                     hero.item_build.pop(0)
                     commands.append({hero.name: BuyCommand(item=f"item_{next_item}")})
@@ -174,7 +175,13 @@ class SmartBot:
                     for item in courier.items.values()
                 )
                 and hero.info.gold > self.items_data["tpscroll"]["cost"]
-                and hero.is_in_range_of_shop("tpscroll", courier)
+                and (
+                    entity_is_in_range_of_shop(hero.info, "tpscroll")
+                    or (
+                        courier is not None
+                        and entity_is_in_range_of_shop(courier, "tpscroll")
+                    )
+                )
             ):
                 commands.append({hero.name: BuyCommand(item="item_tpscroll")})
                 continue

@@ -1,10 +1,18 @@
 import math
 
-from rampagebot.bot.constants import BOT_LEFT, MID_LEFT, MID_RIGHT, TOP_RIGHT
+from rampagebot.bot.constants import (
+    BOT_LEFT,
+    MID_LEFT,
+    MID_RIGHT,
+    SECRET_SHOP_ITEMS,
+    TOP_RIGHT,
+)
 from rampagebot.bot.enums import LaneAssignment, LanePosition
 from rampagebot.models.dota.BaseEntity import Vector
 from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
+from rampagebot.models.dota.EntityCourier import EntityCourier
 from rampagebot.models.dota.EntityHero import EntityHero
+from rampagebot.models.dota.EntityPlayerHero import EntityPlayerHero
 from rampagebot.models.dota.EntityTree import EntityTree
 from rampagebot.models.dota.enums.DOTATeam import DOTATeam
 from rampagebot.models.TeamName import TeamName
@@ -187,3 +195,41 @@ def find_closest_tree_id(world: World, location: Vector) -> str | None:
         trees.sort(key=lambda x: distance_between(location, x[1].origin))
         return trees[0][0]
     return None
+
+
+def player_can_buy_item(
+    item_name: str, hero_info: EntityPlayerHero, courier: EntityCourier | None = None
+) -> bool:
+    if entity_is_in_range_of_shop(hero_info, item_name) and (
+        entity_has_free_slot(hero_info) or entity_can_stack_item(hero_info, item_name)
+    ):
+        return True
+    if (
+        courier is not None
+        and entity_is_in_range_of_shop(courier, item_name)
+        and (entity_has_free_slot(courier) or entity_can_stack_item(courier, item_name))
+    ):
+        return True
+    return False
+
+
+def entity_is_in_range_of_shop(
+    entity: EntityPlayerHero | EntityCourier, item_name: str
+) -> bool:
+    if item_name in SECRET_SHOP_ITEMS:
+        return entity.in_range_of_secret_shop
+    else:
+        return entity.in_range_of_home_shop
+
+
+def entity_has_free_slot(entity: EntityPlayerHero | EntityCourier) -> bool:
+    return any(i is None for i in entity.items.values())
+
+
+def entity_can_stack_item(
+    entity: EntityPlayerHero | EntityCourier, item_name: str
+) -> bool:
+    for item in entity.items.values():
+        if item is not None and item.name == f"item_{item_name}" and item.is_stackable:
+            return True
+    return False
