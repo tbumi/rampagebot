@@ -434,16 +434,25 @@ class SmartBot:
                 backpack_item = hero.info.items[b]
                 # already checked when building filled_backpack_slots
                 assert backpack_item is not None
-                backpack_item_cost = self.items_data[
-                    backpack_item.name.removeprefix("item_")
-                ]["cost"]
+
+                if backpack_item.name.startswith("item_recipe_"):
+                    # force recipes to be lowest priority for inventory
+                    backpack_item_cost = 0
+                else:
+                    backpack_item_cost = self.items_data[
+                        backpack_item.name.removeprefix("item_")
+                    ]["cost"]
                 item_costs = []
                 for i in range(6):
                     inventory_item = hero.info.items[i]
                     # empty_inv_slots list is empty so all slots must have an item
                     assert inventory_item is not None
                     item_name = inventory_item.name.removeprefix("item_")
-                    item_costs.append(self.items_data[item_name]["cost"])
+                    if item_name.startswith("recipe_"):
+                        # force recipes to be lowest priority for inventory
+                        item_costs.append(0)
+                    else:
+                        item_costs.append(self.items_data[item_name]["cost"])
                 cheapest_item_slot = min(range(6), key=item_costs.__getitem__)
                 if item_costs[cheapest_item_slot] < backpack_item_cost:
                     return SwapItemSlotsCommand(slot1=b, slot2=cheapest_item_slot)
