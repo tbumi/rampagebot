@@ -1,4 +1,5 @@
 import random
+from typing import Any
 
 import numpy as np
 
@@ -11,14 +12,13 @@ from rampagebot.models.Commands import (
     CastTargetPointCommand,
     CastTargetUnitCommand,
     Command,
-    UseItemCommand,
 )
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
 
 class CrystalMaiden(Hero):
-    def __init__(self, team: TeamName):
+    def __init__(self, team: TeamName, items_data: dict[str, Any]):
         self.team = team
         super().__init__(
             name="npc_dota_hero_crystal_maiden",
@@ -82,6 +82,7 @@ class CrystalMaiden(Hero):
             ability_2="crystal_maiden_frostbite",
             ability_3="crystal_maiden_brilliance_aura",
             ability_4="crystal_maiden_freezing_field",
+            items_data=items_data,
         )
 
     def fight(self, world: World) -> Command | None:
@@ -106,10 +107,23 @@ class CrystalMaiden(Hero):
             x, y, z = world.entities[target_id].origin
             return CastTargetPointCommand(ability=nova.ability_index, x=x, y=y, z=z)
 
-        for i in self.info.items.values():
-            if i is not None and i.name == "item_blood_grenade":
-                x, y, z = world.entities[target_id].origin
-                return UseItemCommand(slot=i.slot, x=x, y=y, z=z)
+        x, y, z = world.entities[target_id].origin
+        command = self.use_item("blood_grenade", x=x, y=y, z=z)
+        if command is not None:
+            return command
+
+        command = self.use_item("cyclone", target=target_id)
+        if command is not None:
+            return command
+        command = self.use_item("wind_waker", target=target_id)
+        if command is not None:
+            return command
+
+        self_id = world.find_player_hero_id(self.name)
+        assert self_id is not None
+        command = self.use_item("glimmer_cape", target=self_id)
+        if command is not None:
+            return command
 
         if self.can_cast_ability(freezing_field):
             return CastNoTargetCommand(ability=freezing_field.ability_index)
@@ -135,5 +149,12 @@ class CrystalMaiden(Hero):
             return CastTargetUnitCommand(
                 ability=frostbite.ability_index, target=nearest_creep_ids[0]
             )
+
+        command = self.use_item("ancient_janggo")
+        if command is not None:
+            return command
+        command = self.use_item("boots_of_bearing")
+        if command is not None:
+            return command
 
         return None

@@ -1,6 +1,5 @@
-import json
 import re
-from typing import cast
+from typing import Any, cast
 
 from rampagebot.bot.constants import BOT_LEFT, SECRET_SHOP_ITEMS, TOP_RIGHT
 from rampagebot.bot.enums import LanePosition
@@ -36,18 +35,16 @@ from rampagebot.models.TeamName import TeamName, enemy_team
 from rampagebot.models.World import World
 from rampagebot.rl.models import GymAction
 
-ITEMS_JSON_PATH = "rampagebot/static/items.json"
-
 
 class SmartBot:
-    def __init__(self, team: TeamName, heroes: list[Hero]) -> None:
+    def __init__(
+        self, team: TeamName, heroes: list[Hero], items_data: dict[str, Any]
+    ) -> None:
         self.team = team
         self.heroes = heroes
         self.world: World | None = None
         self.last_issued_actions: dict[str, int] = {}
-
-        with open(ITEMS_JSON_PATH, "rt") as f:
-            self.items_data = json.load(f)
+        self.items_data = items_data
 
     def generate_next_commands(
         self, actions: dict[str, int]

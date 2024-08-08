@@ -1,3 +1,5 @@
+from typing import Any
+
 from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
@@ -12,7 +14,7 @@ STIFLING_DAGGER_BONUS_DMG = [0.3, 0.45, 0.6, 0.75]
 
 
 class PhantomAssassin(Hero):
-    def __init__(self, team: TeamName):
+    def __init__(self, team: TeamName, items_data: dict[str, Any]):
         self.team = team
         super().__init__(
             name="npc_dota_hero_phantom_assassin",
@@ -70,6 +72,7 @@ class PhantomAssassin(Hero):
             ability_2="phantom_assassin_phantom_strike",
             ability_3="phantom_assassin_blur",
             ability_4="phantom_assassin_coup_de_grace",
+            items_data=items_data,
         )
 
     def fight(self, world: World) -> Command | None:
@@ -86,6 +89,10 @@ class PhantomAssassin(Hero):
 
         if self.can_cast_ability(dagger):
             return CastTargetUnitCommand(ability=dagger.ability_index, target=target_id)
+
+        command = self.use_item("abyssal_blade", target=target_id)
+        if command is not None:
+            return command
 
         if self.can_cast_ability(strike):
             return CastTargetUnitCommand(ability=strike.ability_index, target=target_id)

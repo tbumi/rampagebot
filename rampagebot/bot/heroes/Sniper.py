@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 
 from rampagebot.bot.enums import LaneAssignment, Role
@@ -19,7 +21,7 @@ SHRAPNEL_CAST_GAP_SECS = 3
 
 
 class Sniper(Hero):
-    def __init__(self, team: TeamName):
+    def __init__(self, team: TeamName, items_data: dict[str, Any]):
         self.team = team
         super().__init__(
             name="npc_dota_hero_sniper",
@@ -85,6 +87,7 @@ class Sniper(Hero):
             ability_2="sniper_headshot",
             ability_3="sniper_take_aim",
             ability_4="sniper_assassinate",
+            items_data=items_data,
         )
         self.last_casted_shrapnel = 0.0
 
@@ -92,6 +95,12 @@ class Sniper(Hero):
         if self.info is None:
             # hero is dead
             return None
+
+        self_id = world.find_player_hero_id(self.name)
+        assert self_id is not None
+        command = self.use_item("mjollnir", target=self_id)
+        if command is not None:
+            return command
 
         shrapnel = self.info.find_ability_by_name("sniper_shrapnel")
         take_aim = self.info.find_ability_by_name("sniper_take_aim")
@@ -130,6 +139,10 @@ class Sniper(Hero):
         if self.can_cast_ability(take_aim):
             return CastNoTargetCommand(ability=take_aim.ability_index)
 
+        command = self.use_item("hurricane_pike", target=target_id)
+        if command is not None:
+            return command
+
         return AttackCommand(target=target_id)
 
     def push_lane_with_abilities(
@@ -138,6 +151,12 @@ class Sniper(Hero):
         if self.info is None:
             # hero is dead
             return None
+
+        self_id = world.find_player_hero_id(self.name)
+        assert self_id is not None
+        command = self.use_item("mjollnir", target=self_id)
+        if command is not None:
+            return command
 
         creep_positions = [world.entities[cid].origin for cid in nearest_creep_ids]
         nearest_creep = world.entities[nearest_creep_ids[0]]

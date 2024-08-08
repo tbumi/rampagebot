@@ -1,4 +1,5 @@
 import random
+from typing import Any
 
 from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.Hero import Hero
@@ -14,7 +15,7 @@ from rampagebot.models.World import World
 
 
 class OutworldDestroyer(Hero):
-    def __init__(self, team: TeamName):
+    def __init__(self, team: TeamName, items_data: dict[str, Any]):
         self.team = team
         super().__init__(
             name="npc_dota_hero_obsidian_destroyer",
@@ -76,6 +77,7 @@ class OutworldDestroyer(Hero):
             ability_2="obsidian_destroyer_astral_imprisonment",
             ability_3="obsidian_destroyer_equilibrium",
             ability_4="obsidian_destroyer_sanity_eclipse",
+            items_data=items_data,
         )
 
     def fight(self, world: World) -> Command | None:

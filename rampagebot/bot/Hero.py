@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
+from typing import Any
 
 from rampagebot.bot.enums import LaneAssignment, Role
-from rampagebot.models.Commands import Command
+from rampagebot.models.Commands import Command, UseItemCommand
 from rampagebot.models.dota.Ability import Ability
 from rampagebot.models.dota.EntityPlayerHero import EntityPlayerHero
 from rampagebot.models.World import World
@@ -22,6 +23,8 @@ class Hero:
     ability_2: str
     ability_3: str
     ability_4: str
+
+    items_data: dict[str, Any]
 
     courier_transferring_items: bool = False
     courier_going_to_secret_shop: bool = False
@@ -50,3 +53,32 @@ class Hero:
             and ability.cooldown_time_remaining == 0.0
             and self.info.mana > ability.mana_cost
         )
+
+    def use_item(
+        self,
+        item_name: str,
+        *,
+        target: str = "",
+        x: float = 0,
+        y: float = 0,
+        z: float = 0,
+    ) -> Command | None:
+        if self.info is None:
+            return None
+        for i in self.info.items.values():
+            if (
+                i is not None
+                and i.slot < 6
+                and i.name == f"item_{item_name}"
+                and i.cooldown_time_remaining == 0
+                and (
+                    self.items_data[item_name]["mc"] is False
+                    or self.info.mana > self.items_data[item_name]["mc"]
+                )
+                and (
+                    self.items_data[item_name]["hc"] is False
+                    or self.info.health > self.items_data[item_name]["hc"]
+                )
+            ):
+                return UseItemCommand(slot=i.slot, target=target, x=x, y=y, z=z)
+        return None

@@ -1,20 +1,16 @@
 import random
+from typing import Any
 
 from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
-from rampagebot.models.Commands import (
-    AttackCommand,
-    CastTargetUnitCommand,
-    Command,
-    UseItemCommand,
-)
+from rampagebot.models.Commands import AttackCommand, CastTargetUnitCommand, Command
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
 
 class Lich(Hero):
-    def __init__(self, team: TeamName):
+    def __init__(self, team: TeamName, items_data: dict[str, Any]):
         self.team = team
         super().__init__(
             name="npc_dota_hero_lich",
@@ -79,12 +75,19 @@ class Lich(Hero):
             ability_2="lich_frost_shield",
             ability_3="lich_sinister_gaze",
             ability_4="lich_chain_frost",
+            items_data=items_data,
         )
 
     def fight(self, world: World) -> Command | None:
         if self.info is None:
             # hero is dead
             return None
+
+        self_id = world.find_player_hero_id(self.name)
+        assert self_id is not None
+        command = self.use_item("lotus_orb", target=self_id)
+        if command is not None:
+            return command
 
         blast = self.info.find_ability_by_name("lich_frost_nova")
         shield = self.info.find_ability_by_name("lich_frost_shield")
@@ -98,22 +101,24 @@ class Lich(Hero):
         if self.can_cast_ability(blast):
             return CastTargetUnitCommand(ability=blast.ability_index, target=target_id)
 
-        for i in self.info.items.values():
-            if i is not None and i.name == "item_blood_grenade":
-                x, y, z = world.entities[target_id].origin
-                return UseItemCommand(slot=i.slot, x=x, y=y, z=z)
+        x, y, z = world.entities[target_id].origin
+        command = self.use_item("blood_grenade", x=x, y=y, z=z)
+        if command is not None:
+            return command
 
         if self.can_cast_ability(chain_frost):
             return CastTargetUnitCommand(
                 ability=chain_frost.ability_index, target=target_id
             )
 
+        command = self.use_item("glimmer_cape", target=self_id)
+        if command is not None:
+            return command
+
         if self.can_cast_ability(gaze):
             return CastTargetUnitCommand(ability=gaze.ability_index, target=target_id)
 
         if self.can_cast_ability(shield):
-            self_id = world.find_player_hero_id(self.name)
-            assert self_id is not None
             return CastTargetUnitCommand(ability=shield.ability_index, target=self_id)
 
         return AttackCommand(target=target_id)
@@ -136,5 +141,12 @@ class Lich(Hero):
             self_id = world.find_player_hero_id(self.name)
             assert self_id is not None
             return CastTargetUnitCommand(ability=shield.ability_index, target=self_id)
+
+        command = self.use_item("ancient_janggo")
+        if command is not None:
+            return command
+        command = self.use_item("boots_of_bearing")
+        if command is not None:
+            return command
 
         return None

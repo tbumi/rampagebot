@@ -1,3 +1,5 @@
+from typing import Any
+
 from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
@@ -6,14 +8,13 @@ from rampagebot.models.Commands import (
     CastNoTargetCommand,
     CastTargetUnitCommand,
     Command,
-    UseItemCommand,
 )
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
 
 class SpiritBreaker(Hero):
-    def __init__(self, team: TeamName):
+    def __init__(self, team: TeamName, items_data: dict[str, Any]):
         self.team = team
         super().__init__(
             name="npc_dota_hero_spirit_breaker",
@@ -73,6 +74,7 @@ class SpiritBreaker(Hero):
             ability_2="spirit_breaker_bulldoze",
             ability_3="spirit_breaker_greater_bash",
             ability_4="spirit_breaker_nether_strike",
+            items_data=items_data,
         )
 
     def fight(self, world: World) -> Command | None:
@@ -94,15 +96,16 @@ class SpiritBreaker(Hero):
         if self.can_cast_ability(bulldoze):
             return CastNoTargetCommand(ability=bulldoze.ability_index)
 
-        for i in self.info.items.values():
-            if (
-                i is not None
-                and i.name == "item_invis_sword"
-                and i.cooldown_time_remaining == 0
-                # TODO: dynamically get the mana cost of shadow blade
-                and self.info.mana > 75
-            ):
-                return UseItemCommand(slot=i.slot)
+        command = self.use_item("phase_boots")
+        if command is not None:
+            return command
+
+        sb_command = self.use_item("invis_sword")
+        if sb_command is not None:
+            return sb_command
+        se_command = self.use_item("silver_edge")
+        if se_command is not None:
+            return se_command
 
         if self.can_cast_ability(nether_strike):
             return CastTargetUnitCommand(
@@ -114,4 +117,12 @@ class SpiritBreaker(Hero):
     def push_lane_with_abilities(
         self, world: World, nearest_creep_ids: list[str]
     ) -> Command | None:
+        if self.info is None:
+            # hero is dead
+            return None
+
+        command = self.use_item("phase_boots")
+        if command is not None:
+            return command
+
         return None

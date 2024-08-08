@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 
 from rampagebot.bot.enums import LaneAssignment, Role
@@ -16,7 +18,7 @@ from rampagebot.models.World import World
 
 
 class Viper(Hero):
-    def __init__(self, team: TeamName):
+    def __init__(self, team: TeamName, items_data: dict[str, Any]):
         self.team = team
         super().__init__(
             name="npc_dota_hero_viper",
@@ -77,6 +79,7 @@ class Viper(Hero):
             ability_2="viper_nethertoxin",
             ability_3="viper_corrosive_skin",
             ability_4="viper_viper_strike",
+            items_data=items_data,
         )
 
     def fight(self, world: World) -> Command | None:
@@ -111,6 +114,10 @@ class Viper(Hero):
                 return CastTargetUnitCommand(
                     ability=poison_atk.ability_index, target=target_id
                 )
+
+        command = self.use_item("hurricane_pike", target=target_id)
+        if command is not None:
+            return command
 
         return AttackCommand(target=target_id)
 

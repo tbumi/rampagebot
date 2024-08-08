@@ -1,4 +1,5 @@
 import random
+from typing import Any
 
 import numpy as np
 
@@ -10,14 +11,13 @@ from rampagebot.models.Commands import (
     CastTargetPointCommand,
     CastTargetUnitCommand,
     Command,
-    UseItemCommand,
 )
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
 
 class Jakiro(Hero):
-    def __init__(self, team: TeamName):
+    def __init__(self, team: TeamName, items_data: dict[str, Any]):
         self.team = team
         super().__init__(
             name="npc_dota_hero_jakiro",
@@ -89,6 +89,7 @@ class Jakiro(Hero):
             ability_2="jakiro_ice_path",
             ability_3="jakiro_liquid_fire",
             ability_4="jakiro_macropyre",
+            items_data=items_data,
         )
         self.ability_affecting_buildings = "jakiro_liquid_fire"
 
@@ -96,6 +97,17 @@ class Jakiro(Hero):
         if self.info is None:
             # hero is dead
             return None
+
+        command = self.use_item("shivas_guard")
+        if command is not None:
+            return command
+
+        command = self.use_item("mekansm")
+        if command is not None:
+            return command
+        command = self.use_item("guardian_greaves")
+        if command is not None:
+            return command
 
         breath = self.info.find_ability_by_name("jakiro_dual_breath")
         ice_path = self.info.find_ability_by_name("jakiro_ice_path")
@@ -106,14 +118,21 @@ class Jakiro(Hero):
         if target_id is None:
             return None
 
+        command = self.use_item("cyclone", target=target_id)
+        if command is not None:
+            return command
+        command = self.use_item("wind_waker", target=target_id)
+        if command is not None:
+            return command
+
         x, y, z = world.entities[target_id].origin
         if self.can_cast_ability(ice_path):
             return CastTargetPointCommand(ability=ice_path.ability_index, x=x, y=y, z=z)
 
-        for i in self.info.items.values():
-            if i is not None and i.name == "item_blood_grenade":
-                x, y, z = world.entities[target_id].origin
-                return UseItemCommand(slot=i.slot, x=x, y=y, z=z)
+        x, y, z = world.entities[target_id].origin
+        command = self.use_item("blood_grenade", x=x, y=y, z=z)
+        if command is not None:
+            return command
 
         if self.can_cast_ability(macropyre):
             return CastTargetPointCommand(
@@ -136,6 +155,17 @@ class Jakiro(Hero):
         if self.info is None:
             # hero is dead
             return None
+
+        command = self.use_item("shivas_guard")
+        if command is not None:
+            return command
+
+        command = self.use_item("mekansm")
+        if command is not None:
+            return command
+        command = self.use_item("guardian_greaves")
+        if command is not None:
+            return command
 
         creep_positions = [world.entities[cid].origin for cid in nearest_creep_ids]
 

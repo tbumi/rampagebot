@@ -34,6 +34,8 @@ from rampagebot.rl.functions import (
 
 NUMBER_OF_GAMES = 100
 
+ITEMS_JSON_PATH = "rampagebot/static/items.json"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -63,27 +65,32 @@ async def send_settings() -> Settings | Response:
         return Response(
             status_code=status.HTTP_205_RESET_CONTENT,
         )
+
+    with open(ITEMS_JSON_PATH, "rt") as f:
+        items_data = json.load(f)
     app.state.bots = {
         # TODO: figure out a way to reduce duplication of team name
         TeamName.RADIANT: SmartBot(
             TeamName.RADIANT,
             [
-                Sniper(TeamName.RADIANT),
-                PhantomAssassin(TeamName.RADIANT),
-                SpiritBreaker(TeamName.RADIANT),
-                Lich(TeamName.RADIANT),
-                Lion(TeamName.RADIANT),
+                Sniper(TeamName.RADIANT, items_data),
+                PhantomAssassin(TeamName.RADIANT, items_data),
+                SpiritBreaker(TeamName.RADIANT, items_data),
+                Lich(TeamName.RADIANT, items_data),
+                Lion(TeamName.RADIANT, items_data),
             ],
+            items_data,
         ),
         TeamName.DIRE: SmartBot(
             TeamName.DIRE,
             [
-                OutworldDestroyer(TeamName.DIRE),
-                Viper(TeamName.DIRE),
-                Juggernaut(TeamName.DIRE),
-                CrystalMaiden(TeamName.DIRE),
-                Jakiro(TeamName.DIRE),
+                OutworldDestroyer(TeamName.DIRE, items_data),
+                Viper(TeamName.DIRE, items_data),
+                Juggernaut(TeamName.DIRE, items_data),
+                CrystalMaiden(TeamName.DIRE, items_data),
+                Jakiro(TeamName.DIRE, items_data),
             ],
+            items_data,
         ),
     }
     if hasattr(app.state, "rl_class"):

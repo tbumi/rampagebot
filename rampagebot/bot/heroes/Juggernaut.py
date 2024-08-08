@@ -1,4 +1,5 @@
 import random
+from typing import Any
 
 from rampagebot.bot.enums import LaneAssignment, Role
 from rampagebot.bot.Hero import Hero
@@ -15,7 +16,7 @@ from rampagebot.models.World import World
 
 
 class Juggernaut(Hero):
-    def __init__(self, team: TeamName):
+    def __init__(self, team: TeamName, items_data: dict[str, Any]):
         self.team = team
         super().__init__(
             name="npc_dota_hero_juggernaut",
@@ -76,12 +77,19 @@ class Juggernaut(Hero):
             ability_2="juggernaut_healing_ward",
             ability_3="juggernaut_blade_dance",
             ability_4="juggernaut_omni_slash",
+            items_data=items_data,
         )
 
     def fight(self, world: World) -> Command | None:
         if self.info is None:
             # hero is dead
             return None
+
+        self_id = world.find_player_hero_id(self.name)
+        assert self_id is not None
+        command = self.use_item("mjollnir", target=self_id)
+        if command is not None:
+            return command
 
         fury = self.info.find_ability_by_name("juggernaut_blade_fury")
         ward = self.info.find_ability_by_name("juggernaut_healing_ward")
@@ -101,6 +109,10 @@ class Juggernaut(Hero):
         if self.can_cast_ability(fury):
             return CastNoTargetCommand(ability=fury.ability_index)
 
+        command = self.use_item("phase_boots")
+        if command is not None:
+            return command
+
         return AttackCommand(target=target_id)
 
     def push_lane_with_abilities(
@@ -109,6 +121,16 @@ class Juggernaut(Hero):
         if self.info is None:
             # hero is dead
             return None
+
+        command = self.use_item("phase_boots")
+        if command is not None:
+            return command
+
+        self_id = world.find_player_hero_id(self.name)
+        assert self_id is not None
+        command = self.use_item("mjollnir", target=self_id)
+        if command is not None:
+            return command
 
         fury = self.info.find_ability_by_name("juggernaut_blade_fury")
         if self.can_cast_ability(fury) and random.random() < 0.2:
