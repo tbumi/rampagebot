@@ -4,7 +4,7 @@ from typing import cast
 
 from rampagebot.bot.constants import BOT_LEFT, SECRET_SHOP_ITEMS, TOP_RIGHT
 from rampagebot.bot.enums import LanePosition
-from rampagebot.bot.heroes.Hero import Hero
+from rampagebot.bot.Hero import Hero
 from rampagebot.bot.utils import (
     TeamName_to_goodbad,
     distance_between,

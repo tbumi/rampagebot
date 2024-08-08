@@ -1,5 +1,5 @@
 from rampagebot.bot.enums import LaneAssignment, Role
-from rampagebot.bot.heroes.Hero import Hero
+from rampagebot.bot.Hero import Hero
 from rampagebot.bot.utils import find_nearest_enemy_hero
 from rampagebot.models.Commands import AttackCommand, CastTargetUnitCommand, Command
 from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
