@@ -154,7 +154,9 @@ class SmartBot:
                 continue
 
             courier = self.world.entities.get(hero.info.courier_id)
-            courier = cast(EntityCourier, courier)  # only for static type checking
+            courier = cast(
+                EntityCourier | None, courier
+            )  # only for static type checking
             if len(hero.item_build) > 0:
                 next_item = hero.item_build[0]
                 next_item_cost = self.items_data[next_item]["cost"]
@@ -167,9 +169,12 @@ class SmartBot:
 
             if (
                 hero.info.tp_scroll_charges == 0
-                and not any(
-                    item is not None and item.name == "item_tpscroll"
-                    for item in courier.items.values()
+                and (
+                    courier is None
+                    or not any(
+                        item is not None and item.name == "item_tpscroll"
+                        for item in courier.items.values()
+                    )
                 )
                 and hero.info.gold > self.items_data["tpscroll"]["cost"]
                 and (
