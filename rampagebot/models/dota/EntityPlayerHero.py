@@ -37,7 +37,8 @@ class EntityPlayerHero(BaseNPC):
     abilities: dict[int, Ability]
 
     def find_ability_by_name(self, ability_name: str) -> Ability:
-        for ability in self.abilities.values():
+        for index, ability in self.abilities.items():
             if ability.name == ability_name:
+                ability.ability_index = index
                 return ability
         raise Exception(f"Ability {ability_name} not found in {self.name}")
