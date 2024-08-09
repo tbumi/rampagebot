@@ -32,15 +32,13 @@ from rampagebot.rl.functions import (
     store_rewards,
 )
 
-NUMBER_OF_GAMES = 100
-
 ITEMS_JSON_PATH = "rampagebot/static/items.json"
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.started_time = datetime.now()
-    app.state.games_remaining = NUMBER_OF_GAMES
+    app.state.game_number = 0
     yield
 
 
@@ -60,12 +58,6 @@ async def validation_exception_handler(request, exc):
 @app.get("/api/settings", response_model=Settings, response_model_exclude_unset=True)
 async def send_settings() -> Settings | Response:
     # this endpoint is called on every new game
-    if app.state.games_remaining == 0:
-        # tell server to end loop
-        return Response(
-            status_code=status.HTTP_205_RESET_CONTENT,
-        )
-
     with open(ITEMS_JSON_PATH, "rt") as f:
         items_data = json.load(f)
     app.state.bots = {
@@ -110,7 +102,7 @@ async def send_settings() -> Settings | Response:
             hero.name for hero in app.state.bots[TeamName.RADIANT].heroes
         ],
         dire_party_names=[hero.name for hero in app.state.bots[TeamName.DIRE].heroes],
-        game_number=NUMBER_OF_GAMES - app.state.games_remaining,
+        game_number=app.state.game_number,
     )
 
 
@@ -188,12 +180,11 @@ async def game_ended(game_end_stats: GameEndStatistics) -> None:
     if hasattr(app.state, "episode_id"):
         end_stats["episode_id"] = app.state.episode_id
 
-    game_number = NUMBER_OF_GAMES - app.state.games_remaining
     datestr = app.state.started_time.strftime("%Y%m%d_%H%M")
     dir_path = Path("/home/traphole/code/rampagebot_results") / datestr
     dir_path.mkdir(parents=True, exist_ok=True)
-    json_path = dir_path / f"{datestr}_end_statistics_{game_number}.json"
+    json_path = dir_path / f"{datestr}_end_statistics_{app.state.game_number}.json"
     with open(json_path, "wt") as f:
         json.dump(end_stats, f, indent=2)
 
-    app.state.games_remaining -= 1
+    app.state.game_number += 1
