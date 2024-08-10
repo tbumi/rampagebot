@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 import ray
-from ray.rllib.algorithms.dqn.dqn import DQNConfig
+from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.examples._old_api_stack.policy.random_policy import RandomPolicy
 from ray.rllib.policy.policy import PolicySpec
 from ray.tune.logger import pretty_print
@@ -46,7 +46,7 @@ def main():
     checkpoint_dir_path.mkdir(parents=True, exist_ok=True)
 
     config = (
-        DQNConfig()
+        PPOConfig()
         .environment(env=RampageBotEnv)
         .framework("torch")
         .env_runners(
@@ -62,7 +62,15 @@ def main():
             policies_to_train=["main"],
         )
         .callbacks(lambda: TrainingCallback(checkpoint_dir_path))
-        .debugging(log_level="INFO")
+        .debugging(
+            log_level="INFO",
+            logger_config={"logdir": str(checkpoint_dir_path / "logs")},
+        )
+    )
+    config.update_from_dict(
+        {
+            "model": {"use_lstm": True},
+        }
     )
 
     algo = config.build()
