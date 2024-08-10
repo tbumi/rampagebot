@@ -62,10 +62,7 @@ def main():
             policies_to_train=["main"],
         )
         .callbacks(lambda: TrainingCallback(checkpoint_dir_path))
-        .debugging(
-            log_level="INFO",
-            logger_config={"logdir": str(checkpoint_dir_path / "logs")},
-        )
+        .debugging(log_level="INFO")
     )
     config.update_from_dict(
         {
