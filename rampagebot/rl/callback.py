@@ -1,6 +1,6 @@
-import json
 import random
 from pathlib import Path
+from typing import cast
 
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 
@@ -12,20 +12,23 @@ WIN_RATE_THRESHOLD = 0.75
 
 
 class TrainingCallback(DefaultCallbacks):
-    def __init__(self, checkpoint_dir: Path) -> None:
+    # checkpoint_dir is a legacy param kept to be able to import previous checkpoints
+    def __init__(self, checkpoint_dir: Path | None = None) -> None:
         super().__init__()
+
         # 0=RandomPolicy, 1=1st main policy snapshot,
         # 2=2nd main policy snapshot, etc..
         self.current_opponent = 0
-        self.checkpoint_dir = checkpoint_dir
+        if len(match_tracker.match_info) > 0:
+            # callback is instantiated from a checkpoint
+            opponents: list[int] = []
+            for m in match_tracker.match_info.values():
+                opp = cast(int, m["opponent"])
+                opponents.append(opp)
+            self.current_opponent = max(opponents)
+            print(f"Setting current_opponent to: {self.current_opponent}")
 
     def on_train_result(self, *, algorithm, result, **kwargs):
-        with open(
-            self.checkpoint_dir / f"train_results_{algorithm.iteration}.json", "wt"
-        ) as f:
-            result["match_info"] = match_tracker.match_info
-            json.dump(result, f, indent=2, default=lambda x: str(x))
-
         matches, wins = match_tracker.count_wins_against(self.current_opponent)
         if matches < MIN_MATCH_THRESHOLD:
             print(f"Iter={algorithm.iteration} -> not enough matches to decide.")

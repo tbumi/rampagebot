@@ -1,4 +1,5 @@
 import argparse
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -10,9 +11,9 @@ from ray.rllib.policy.policy import PolicySpec
 from ray.tune.logger import pretty_print
 
 from rampagebot.models.TeamName import TeamName
+from rampagebot.rl import match_tracker
 from rampagebot.rl.callback import TrainingCallback
 from rampagebot.rl.env import RampageBotEnv
-from rampagebot.rl.match_tracker import init_match
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -33,19 +34,20 @@ def main():
 
     if args.from_checkpoint:
         print(f"Restoring from previous checkpoint: {args.from_checkpoint}")
+        match_tracker.load_from_checkpoint(root_dir / args.from_checkpoint)
         algo = Algorithm.from_checkpoint(str(root_dir / args.from_checkpoint))
     else:
 
         def policy_mapping(agent_id, episode, *args, **kwargs):
             print(f"{episode.episode_id=}")
             if episode.episode_id % 2 == 0:
-                init_match(episode.episode_id, TeamName.RADIANT, 0)
+                match_tracker.init_match(episode.episode_id, TeamName.RADIANT, 0)
                 if agent_id.startswith("radiant"):
                     return "main"
                 else:
                     return "random"
             else:
-                init_match(episode.episode_id, TeamName.DIRE, 0)
+                match_tracker.init_match(episode.episode_id, TeamName.DIRE, 0)
                 if agent_id.startswith("dire"):
                     return "main"
                 else:
@@ -67,7 +69,7 @@ def main():
                 policy_mapping_fn=policy_mapping,
                 policies_to_train=["main"],
             )
-            .callbacks(lambda: TrainingCallback(checkpoint_dir_path))
+            .callbacks(TrainingCallback)
             .debugging(log_level="INFO")
         )
         config.update_from_dict(
@@ -87,6 +89,11 @@ def main():
                 checkpoint_dir_path / f"train_results_{algo.iteration}.txt", "wt"
             ) as f:
                 f.write(pretty_print(result))
+            with open(
+                checkpoint_dir_path / f"train_results_{algo.iteration}.json", "wt"
+            ) as f:
+                result["match_info"] = match_tracker.match_info
+                json.dump(result, f, indent=2, default=lambda x: str(x))
         except KeyboardInterrupt:
             break
 
