@@ -160,7 +160,7 @@ class SmartBot:
             if len(hero.item_build) > 0:
                 next_item = hero.item_build[0]
                 next_item_cost = self.items_data[next_item]["cost"]
-                if hero.info.gold > next_item_cost and player_can_buy_item(
+                if hero.info.gold > (next_item_cost * 1.1) and player_can_buy_item(
                     next_item, hero.info, courier
                 ):
                     hero.item_build.pop(0)
@@ -176,7 +176,7 @@ class SmartBot:
                         for item in courier.items.values()
                     )
                 )
-                and hero.info.gold > self.items_data["tpscroll"]["cost"]
+                and hero.info.gold > (self.items_data["tpscroll"]["cost"] * 1.1)
                 and (
                     entity_is_in_range_of_shop(hero.info, "tpscroll")
                     or (
