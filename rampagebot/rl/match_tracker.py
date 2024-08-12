@@ -4,12 +4,12 @@ from pathlib import Path
 
 from rampagebot.models.TeamName import TeamName
 
-match_info = {}
+match_info: dict[str, dict[str, int | str | None]] = {}
 
 
 def init_match(episode_id: int, policy_team: TeamName, opponent_number: int) -> None:
     match_info[str(episode_id)] = {
-        "policy": policy_team,
+        "policy": policy_team.value,
         "opponent": opponent_number,
     }
 
@@ -34,7 +34,11 @@ def end_match(winner: TeamName | None) -> None:
     for episode_id, info in match_info.items():
         # ASSUMING the match in progress is the only match without a winner
         if "match_winner" not in info:
-            match_info[episode_id]["match_winner"] = winner
+            if winner is not None:
+                winner_str = winner.value
+            else:
+                winner_str = None
+            match_info[episode_id]["match_winner"] = winner_str
             break
 
 
