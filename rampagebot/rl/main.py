@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 import ray
+from ray.rllib.algorithms.algorithm import Algorithm
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.examples._old_api_stack.policy.random_policy import RandomPolicy
 from ray.rllib.policy.policy import PolicySpec
@@ -25,56 +26,57 @@ def main():
 
     ray.init()
 
-    def policy_mapping(agent_id, episode, *args, **kwargs):
-        print(f"{episode.episode_id=}")
-        if episode.episode_id % 2 == 0:
-            init_match(episode.episode_id, TeamName.RADIANT, 0)
-            if agent_id.startswith("radiant"):
-                return "main"
-            else:
-                return "random"
-        else:
-            init_match(episode.episode_id, TeamName.DIRE, 0)
-            if agent_id.startswith("dire"):
-                return "main"
-            else:
-                return "random"
-
-    root_dir = Path("/home/traphole/code/rampagebot_results")
+    root_dir = Path("../rampagebot_results").resolve()
     datestr = datetime.now().strftime("%Y%m%d_%H%M")
     checkpoint_dir_path = root_dir / datestr
     checkpoint_dir_path.mkdir(parents=True, exist_ok=True)
 
-    config = (
-        PPOConfig()
-        .environment(env=RampageBotEnv)
-        .framework("torch")
-        .env_runners(
-            num_env_runners=0,
-            enable_connectors=False,
-        )
-        .multi_agent(
-            policies={
-                "main": PolicySpec(),
-                "random": PolicySpec(policy_class=RandomPolicy),
-            },
-            policy_mapping_fn=policy_mapping,
-            policies_to_train=["main"],
-        )
-        .callbacks(lambda: TrainingCallback(checkpoint_dir_path))
-        .debugging(log_level="INFO")
-    )
-    config.update_from_dict(
-        {
-            "model": {"use_lstm": True},
-        }
-    )
-
-    algo = config.build()
-
     if args.from_checkpoint:
         print(f"Restoring from previous checkpoint: {args.from_checkpoint}")
-        algo.restore(str(root_dir / args.from_checkpoint))
+        algo = Algorithm.from_checkpoint(str(root_dir / args.from_checkpoint))
+    else:
+
+        def policy_mapping(agent_id, episode, *args, **kwargs):
+            print(f"{episode.episode_id=}")
+            if episode.episode_id % 2 == 0:
+                init_match(episode.episode_id, TeamName.RADIANT, 0)
+                if agent_id.startswith("radiant"):
+                    return "main"
+                else:
+                    return "random"
+            else:
+                init_match(episode.episode_id, TeamName.DIRE, 0)
+                if agent_id.startswith("dire"):
+                    return "main"
+                else:
+                    return "random"
+
+        config = (
+            PPOConfig()
+            .environment(env=RampageBotEnv)
+            .framework("torch")
+            .env_runners(
+                num_env_runners=0,
+                enable_connectors=False,
+            )
+            .multi_agent(
+                policies={
+                    "main": PolicySpec(),
+                    "random": PolicySpec(policy_class=RandomPolicy),
+                },
+                policy_mapping_fn=policy_mapping,
+                policies_to_train=["main"],
+            )
+            .callbacks(lambda: TrainingCallback(checkpoint_dir_path))
+            .debugging(log_level="INFO")
+        )
+        config.update_from_dict(
+            {
+                "model": {"use_lstm": True},
+            }
+        )
+
+        algo = config.build()
 
     while True:
         try:

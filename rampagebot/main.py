@@ -32,7 +32,7 @@ from rampagebot.rl.functions import (
     store_rewards,
 )
 
-ITEMS_JSON_PATH = "rampagebot/static/items.json"
+ITEMS_JSON_PATH = Path("rampagebot/static/items.json").resolve()
 
 
 @asynccontextmanager
@@ -181,7 +181,7 @@ async def game_ended(game_end_stats: GameEndStatistics) -> None:
         end_stats["episode_id"] = app.state.episode_id
 
     datestr = app.state.started_time.strftime("%Y%m%d_%H%M")
-    dir_path = Path("/home/traphole/code/rampagebot_results") / datestr
+    dir_path = Path("../rampagebot_results").resolve() / datestr
     dir_path.mkdir(parents=True, exist_ok=True)
     json_path = dir_path / f"{datestr}_end_statistics_{app.state.game_number}.json"
     with open(json_path, "wt") as f:
