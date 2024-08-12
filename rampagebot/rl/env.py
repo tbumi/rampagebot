@@ -31,4 +31,5 @@ class RampageBotEnv(ExternalMultiAgentEnv):
 
     def run(self):
         app.state.rl_class = self
-        uvicorn.run(app, port=8080)
+
+        uvicorn.run(app, port=8080, log_level="warning")
