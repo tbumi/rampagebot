@@ -201,7 +201,6 @@ def store_rewards(
                             tower_from_self_world is None
                             and tower_from_enemy_world is None
                         ):
-                            print(f"{tower.name} TOWER KILL NEW REWARD!!!")
                             hero.unrewarded.team_tower_kills.add(tower)
                     continue
                 if stat.name == "team_barracks_kills":
@@ -217,7 +216,6 @@ def store_rewards(
                             f"{enemy_g_or_b}_rax_{barracks.name.lower()}"
                         )
                         if rax_from_self_world is None and rax_from_enemy_world is None:
-                            print(f"{barracks.name} RAX KILL NEW REWARD!!!")
                             hero.unrewarded.team_barracks_kills.add(barracks)
                     continue
                 player_idx = stat_idx[hero.name]
@@ -225,13 +223,6 @@ def store_rewards(
                 unrewarded_value = getattr(hero.unrewarded, stat.name)
                 rewarded_value = getattr(hero.rewarded, stat.name)
                 if current_value > unrewarded_value + rewarded_value:
-                    print(
-                        "new reward!",
-                        stat.name,
-                        current_value,
-                        unrewarded_value,
-                        rewarded_value,
-                    )
                     setattr(
                         hero.unrewarded,
                         stat.name,

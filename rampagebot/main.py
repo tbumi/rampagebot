@@ -113,11 +113,8 @@ async def game_update_endpoint(
     if app.state.game_ended:
         return []
 
-    # if game_update.update_count % 9 == 0:
-    #     dir_path = Path("./json_samples")
-    #     dir_path.mkdir(parents=True, exist_ok=True)
-    #     with open(dir_path / "game_update.json", "wb") as f:
-    #         f.write(await req.body())
+    if game_update.update_count % 100 == 0:
+        print(f"{game_update.update_count=}")
 
     for team in TeamName:
         bot: SmartBot = app.state.bots[team]
