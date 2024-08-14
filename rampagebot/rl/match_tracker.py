@@ -50,4 +50,6 @@ def load_from_checkpoint(checkpoint_path: Path) -> None:
         result_numbers.append(int(match.group(1)))
     last_result_n = max(result_numbers)
     with open(checkpoint_path / f"train_results_{last_result_n}.json", "rt") as f:
-        match_info.update(json.load(f)["match_info"])
+        for episode_id, info in json.load(f)["match_info"].items():
+            if "match_winner" in info:
+                match_info[episode_id] = info
