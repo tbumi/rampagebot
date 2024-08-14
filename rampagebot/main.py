@@ -171,7 +171,6 @@ async def game_ended(game_end_stats: GameEndStatistics) -> None:
 
         app.state.rl_class.end_episode(app.state.episode_id, app.state.last_observation)
         match_tracker.end_match(game_end_stats.winner)
-        print(f"{match_tracker.match_info}")
 
     end_stats = game_end_stats.model_dump(mode="json")
     if hasattr(app.state, "episode_id"):
