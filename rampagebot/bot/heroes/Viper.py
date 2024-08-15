@@ -39,10 +39,10 @@ class Viper(Hero):
                 "viper_viper_strike",
                 "viper_nethertoxin",
                 "viper_nethertoxin",
-                "special_bonus_unique_viper_6",  # +20 Corrosive Skin Attack Speed Slow
+                "special_bonus_unique_viper_3",  # +40 Nethertoxin Min/Max Damage
                 "viper_nethertoxin",
                 "viper_viper_strike",
-                "special_bonus_unique_viper_7",  # +20% Poison Attack slow/damage
+                "special_bonus_unique_viper_2",  # +80 Viper Strike DPS
                 "special_bonus_unique_viper_5",  # Become Universal
             ],
             item_build=[
