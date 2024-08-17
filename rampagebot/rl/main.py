@@ -5,7 +5,7 @@ from pathlib import Path
 
 import ray
 from ray.rllib.algorithms.algorithm import Algorithm
-from ray.rllib.algorithms.ppo import PPOConfig
+from ray.rllib.algorithms.dqn.dqn import DQNConfig
 from ray.rllib.examples._old_api_stack.policy.random_policy import RandomPolicy
 from ray.rllib.policy.policy import PolicySpec
 from ray.tune.logger import pretty_print
@@ -54,7 +54,7 @@ def main():
                     return "random"
 
         config = (
-            PPOConfig()
+            DQNConfig()
             .environment(env=RampageBotEnv)
             .framework("torch")
             .env_runners(
@@ -71,11 +71,13 @@ def main():
             )
             .callbacks(TrainingCallback)
             .debugging(log_level="INFO")
-        )
-        config.update_from_dict(
-            {
-                "model": {"use_lstm": True},
-            }
+            .training(
+                n_step=3,
+                noisy=True,
+                num_atoms=50,
+                v_min=-10.0,
+                v_max=10.0,
+            )
         )
 
         algo = config.build()
