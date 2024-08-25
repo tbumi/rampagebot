@@ -16,3 +16,4 @@ class Item(BaseModel):
     combine_locked: bool
     disassemblable: bool
     cooldown_time_remaining: float
+    is_stackable: bool

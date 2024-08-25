@@ -1,28 +1,25 @@
-from rampagebot.bot.enums import LaneOptions, RoleOptions
-from rampagebot.bot.heroes.Hero import Hero
-from rampagebot.bot.utils import (
-    distance_between,
-    find_nearest_enemy_hero,
-    point_at_distance,
-)
+from typing import Any
+
+from rampagebot.bot.enums import LaneAssignment, Role
+from rampagebot.bot.Hero import Hero
+from rampagebot.bot.utils import find_nearest_enemy_hero
 from rampagebot.models.Commands import (
     AttackCommand,
     CastNoTargetCommand,
     CastTargetUnitCommand,
     Command,
-    MoveCommand,
 )
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
 
 class SpiritBreaker(Hero):
-    def __init__(self, team: TeamName):
+    def __init__(self, team: TeamName, items_data: dict[str, Any]):
         self.team = team
         super().__init__(
             name="npc_dota_hero_spirit_breaker",
-            lane=LaneOptions.bottom,
-            role=RoleOptions.carry,
+            lane=LaneAssignment.SAFELANE,
+            role=Role.CARRY,
             ability_build=[
                 "spirit_breaker_greater_bash",
                 "spirit_breaker_charge_of_darkness",
@@ -48,7 +45,6 @@ class SpiritBreaker(Hero):
                 "tango",
                 "branches",
                 "branches",
-                "quelling_blade",
                 "gauntlets",
                 "circlet",
                 "recipe_bracer",
@@ -57,6 +53,7 @@ class SpiritBreaker(Hero):
                 "blades_of_attack",
                 "magic_stick",
                 "recipe_magic_wand",
+                "aghanims_shard",
                 "shadow_amulet",
                 "blitz_knuckles",
                 "broadsword",
@@ -64,7 +61,20 @@ class SpiritBreaker(Hero):
                 "point_booster",
                 "vitality_booster",
                 "energy_booster",
+                "staff_of_wizardry",
+                "robe",
+                "recipe_kaya",
+                "blade_of_alacrity",
+                "boots_of_elves",
+                "recipe_yasha",
+                "demon_edge",
+                "recipe_silver_edge",
             ],
+            ability_1="spirit_breaker_charge_of_darkness",
+            ability_2="spirit_breaker_bulldoze",
+            ability_3="spirit_breaker_greater_bash",
+            ability_4="spirit_breaker_nether_strike",
+            items_data=items_data,
         )
 
     def fight(self, world: World) -> Command | None:
@@ -76,10 +86,9 @@ class SpiritBreaker(Hero):
         bulldoze = self.info.find_ability_by_name("spirit_breaker_bulldoze")
         nether_strike = self.info.find_ability_by_name("spirit_breaker_nether_strike")
 
-        target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
-        if target is None:
+        target_id = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
+        if target_id is None:
             return None
-        target_id, target_entity, _ = target
 
         if self.can_cast_ability(charge):
             return CastTargetUnitCommand(ability=charge.ability_index, target=target_id)
@@ -87,18 +96,33 @@ class SpiritBreaker(Hero):
         if self.can_cast_ability(bulldoze):
             return CastNoTargetCommand(ability=bulldoze.ability_index)
 
+        command = self.use_item("phase_boots")
+        if command is not None:
+            return command
+
+        sb_command = self.use_item("invis_sword")
+        if sb_command is not None:
+            return sb_command
+        se_command = self.use_item("silver_edge")
+        if se_command is not None:
+            return se_command
+
         if self.can_cast_ability(nether_strike):
             return CastTargetUnitCommand(
                 ability=nether_strike.ability_index, target=target_id
             )
 
-        if self.info.has_aggro or self.info.has_tower_aggro:
-            return MoveCommand.to(
-                point_at_distance(
-                    target_entity.origin,
-                    self.info.origin,
-                    distance_between(self.info.origin, target_entity.origin) * 2,
-                )
-            )
-
         return AttackCommand(target=target_id)
+
+    def push_lane_with_abilities(
+        self, world: World, nearest_creep_ids: list[str]
+    ) -> Command | None:
+        if self.info is None:
+            # hero is dead
+            return None
+
+        command = self.use_item("phase_boots")
+        if command is not None:
+            return command
+
+        return None

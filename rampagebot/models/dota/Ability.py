@@ -11,7 +11,7 @@ from rampagebot.models.dota.enums.DOTAUnitTargetType import DOTAUnitTargetType
 
 
 class Ability(BaseModel):
-    model_config = ConfigDict(frozen=True, alias_generator=lambda f: to_camel(f))
+    model_config = ConfigDict(alias_generator=lambda f: to_camel(f))
 
     type: Literal["Ability"]
     name: str

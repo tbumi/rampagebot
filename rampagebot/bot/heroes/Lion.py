@@ -1,27 +1,21 @@
-from rampagebot.bot.enums import LaneOptions, RoleOptions
-from rampagebot.bot.heroes.Hero import Hero
-from rampagebot.bot.utils import (
-    distance_between,
-    find_nearest_enemy_hero,
-    point_at_distance,
-)
-from rampagebot.models.Commands import (
-    AttackCommand,
-    CastTargetUnitCommand,
-    Command,
-    MoveCommand,
-)
+from typing import Any
+
+from rampagebot.bot.enums import LaneAssignment, Role
+from rampagebot.bot.Hero import Hero
+from rampagebot.bot.utils import find_nearest_enemy_hero
+from rampagebot.models.Commands import AttackCommand, CastTargetUnitCommand, Command
+from rampagebot.models.dota.EntityBaseNPC import EntityBaseNPC
 from rampagebot.models.TeamName import TeamName
 from rampagebot.models.World import World
 
 
 class Lion(Hero):
-    def __init__(self, team: TeamName):
+    def __init__(self, team: TeamName, items_data: dict[str, Any]):
         self.team = team
         super().__init__(
             name="npc_dota_hero_lion",
-            lane=LaneOptions.top,
-            role=RoleOptions.support,
+            lane=LaneAssignment.OFFLANE,
+            role=Role.SUPPORT,
             ability_build=[
                 "lion_impale",
                 "lion_mana_drain",
@@ -48,17 +42,37 @@ class Lion(Hero):
                 "tango",
                 "branches",
                 "branches",
+                "enchanted_mango",
+                "enchanted_mango",
                 "blood_grenade",
                 "boots",
-                "wind_lace",
-                "ring_of_regen",
                 "magic_stick",
+                "wind_lace",
+                "staff_of_wizardry",
+                "ghost",
+                "ring_of_regen",
+                "void_stone",
                 "recipe_magic_wand",
                 "aghanims_shard",
                 "energy_booster",
-                "void_stone",
                 "recipe_aether_lens",
+                "point_booster",
+                "ogre_axe",
+                "blade_of_alacrity",
+                "tiara_of_selemene",
+                "vitality_booster",
+                "energy_booster",
+                "point_booster",
+                "recipe_ethereal_blade",
+                "shadow_amulet",
+                "cloak",
+                "recipe_glimmer_cape",
             ],
+            ability_1="lion_impale",
+            ability_2="lion_voodoo",
+            ability_3="lion_mana_drain",
+            ability_4="lion_finger_of_death",
+            items_data=items_data,
         )
 
     def fight(self, world: World) -> Command | None:
@@ -71,10 +85,9 @@ class Lion(Hero):
         finger = self.info.find_ability_by_name("lion_finger_of_death")
         mana_drain = self.info.find_ability_by_name("lion_mana_drain")
 
-        target = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
-        if target is None:
+        target_id = find_nearest_enemy_hero(self.info.origin, world, self.team, 5000)
+        if target_id is None:
             return None
-        target_id, target_entity, _ = target
 
         if self.can_cast_ability(hex):
             return CastTargetUnitCommand(ability=hex.ability_index, target=target_id)
@@ -82,21 +95,52 @@ class Lion(Hero):
         if self.can_cast_ability(spike):
             return CastTargetUnitCommand(ability=spike.ability_index, target=target_id)
 
+        x, y, z = world.entities[target_id].origin
+        command = self.use_item("blood_grenade", x=x, y=y, z=z)
+        if command is not None:
+            return command
+
+        command = self.use_item("ethereal_blade", target=target_id)
+        if command is not None:
+            return command
+
         if self.can_cast_ability(finger):
             return CastTargetUnitCommand(ability=finger.ability_index, target=target_id)
+
+        self_id = world.find_player_hero_id(self.name)
+        assert self_id is not None
+        command = self.use_item("glimmer_cape", target=self_id)
+        if command is not None:
+            return command
 
         if self.can_cast_ability(mana_drain):
             return CastTargetUnitCommand(
                 ability=mana_drain.ability_index, target=target_id
             )
 
-        if self.info.has_aggro or self.info.has_tower_aggro:
-            return MoveCommand.to(
-                point_at_distance(
-                    target_entity.origin,
-                    self.info.origin,
-                    distance_between(self.info.origin, target_entity.origin) * 2,
-                )
+        return AttackCommand(target=target_id)
+
+    def push_lane_with_abilities(
+        self, world: World, nearest_creep_ids: list[str]
+    ) -> Command | None:
+        if self.info is None:
+            # hero is dead
+            return None
+
+        spike = self.info.find_ability_by_name("lion_impale")
+        if self.can_cast_ability(spike) and len(nearest_creep_ids) > 1:
+            return CastTargetUnitCommand(
+                ability=spike.ability_index, target=nearest_creep_ids[0]
             )
 
-        return AttackCommand(target=target_id)
+        mana_drain = self.info.find_ability_by_name("lion_mana_drain")
+        if self.can_cast_ability(mana_drain):
+            for creep_id in nearest_creep_ids:
+                creep = world.entities[creep_id]
+                assert isinstance(creep, EntityBaseNPC)
+                if creep.mana > 0:
+                    return CastTargetUnitCommand(
+                        ability=mana_drain.ability_index, target=creep_id
+                    )
+
+        return None

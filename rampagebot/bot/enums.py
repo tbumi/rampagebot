@@ -1,12 +1,18 @@
 from enum import Enum
 
 
-class LaneOptions(Enum):
-    top = "top"
-    middle = "mid"
-    bottom = "bot"
+class LaneAssignment(Enum):
+    OFFLANE = "offlane"
+    MIDDLE = "middle"
+    SAFELANE = "safelane"
 
 
-class RoleOptions(Enum):
-    carry = "carry"
-    support = "support"
+class LanePosition(Enum):
+    TOP = "top"
+    MIDDLE = "mid"
+    BOTTOM = "bot"
+
+
+class Role(Enum):
+    CARRY = "carry"
+    SUPPORT = "support"
